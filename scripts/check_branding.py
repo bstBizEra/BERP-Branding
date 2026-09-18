@@ -591,6 +591,29 @@ def check_branding_logic(app_root: Path, package: str, hooks: dict) -> None:
 			"logo and favicon untouched",
 		)
 
+		# force + platform default. The bench suite caught this interaction when the
+		# preflight did not: C11 only ever exercised the force=0 path.
+		if hasattr(branding, "PLATFORM_DEFAULTS"):
+			frappe.conf = {}
+			frappe._single = _Doc(app_logo="/files/operator.svg")
+			branding.apply_branding(force=1)
+			check(
+				"C16",
+				"force=1 asserts the platform default over an unconfigured field",
+				frappe._single.get("app_logo") == branding.PLATFORM_DEFAULTS["app_logo"],
+				f"got {frappe._single.get('app_logo')!r}",
+				branding.PLATFORM_DEFAULTS["app_logo"],
+			)
+			frappe._single = _Doc(app_logo="/files/operator.svg")
+			branding.apply_branding()
+			check(
+				"C17",
+				"Without force, an operator value survives the platform default",
+				frappe._single.get("app_logo") == "/files/operator.svg",
+				f"operator value became {frappe._single.get('app_logo')!r}",
+				"preserved",
+			)
+
 		# render-time escaping
 		frappe.conf = {"berp_brand_name": '<script>alert("xss")</script>'}
 		context = {}

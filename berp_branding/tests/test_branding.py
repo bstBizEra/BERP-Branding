@@ -96,13 +96,22 @@ class TestBrandAssets(_TestCase):
 			with self.subTest(value=repr(value)), site_config(berp_brand_logo=value):
 				self.assertIsNone(_brand_asset("berp_brand_logo"))
 
-	def test_branding_always_carries_a_label(self):
+	def test_branding_always_carries_the_platform_identity(self):
+		"""Unconfigured means bERP, not empty.
+
+		This assertion was inverted when the app began shipping platform assets. It
+		used to require that app_logo be ABSENT when nothing was configured, which
+		is what left a fresh install showing ERPNext's logo.
+		"""
 		with site_config(berp_brand_name=None, berp_brand_logo=None):
 			frappe.conf.pop("berp_brand_name", None)
 			frappe.conf.pop("berp_brand_logo", None)
 			values = branding()
 			self.assertEqual(values["app_name"], DEFAULT_BRAND)
-			self.assertNotIn("app_logo", values)
+			self.assertEqual(values["app_logo"], PLATFORM_DEFAULTS["app_logo"])
+			self.assertEqual(values["favicon"], PLATFORM_DEFAULTS["favicon"])
+			# banner_image has no platform default, so it stays absent
+			self.assertNotIn("banner_image", values)
 
 	def test_branding_maps_every_configured_key(self):
 		with site_config(
@@ -175,12 +184,39 @@ class TestApplyBranding(_TestCase):
 			second = apply_branding(force=1)
 		self.assertEqual(second["applied"], {})
 
-	def test_never_blanks_a_field_that_is_not_configured(self):
+	def test_never_blanks_a_field(self):
+		"""No path through apply_branding may leave a brand field empty.
+
+		Narrowed deliberately from an earlier "never CHANGES an unconfigured field".
+		That is no longer true and should not be: with a platform default in place,
+		force=1 asserts the bERP identity over an unconfigured field. What must
+		never happen is a field ending up blank, which is what would actually break
+		a site. The two cases below pin the new semantics explicitly.
+		"""
 		frappe.db.set_single_value("Website Settings", "app_logo", "/files/kept.svg")
 		with site_config(berp_brand_logo=None):
 			frappe.conf.pop("berp_brand_logo", None)
 			apply_branding(force=1)
-		self.assertEqual(frappe.db.get_single_value("Website Settings", "app_logo"), "/files/kept.svg")
+		self.assertTrue(frappe.db.get_single_value("Website Settings", "app_logo"))
+
+	def test_force_resets_an_unconfigured_field_to_the_platform_default(self):
+		"""force=1 means "assert the bERP identity" — this is what after_install does."""
+		frappe.db.set_single_value("Website Settings", "app_logo", "/files/old.svg")
+		with site_config(berp_brand_logo=None):
+			frappe.conf.pop("berp_brand_logo", None)
+			apply_branding(force=1)
+		self.assertEqual(
+			frappe.db.get_single_value("Website Settings", "app_logo"),
+			PLATFORM_DEFAULTS["app_logo"],
+		)
+
+	def test_without_force_an_operator_value_survives_the_platform_default(self):
+		"""after_migrate must not undo a logo an operator set by hand."""
+		frappe.db.set_single_value("Website Settings", "app_logo", "/files/operator.svg")
+		with site_config(berp_brand_logo=None):
+			frappe.conf.pop("berp_brand_logo", None)
+			apply_branding()
+		self.assertEqual(frappe.db.get_single_value("Website Settings", "app_logo"), "/files/operator.svg")
 
 
 class TestBrandingStatus(_TestCase):

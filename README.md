@@ -196,8 +196,10 @@ both needing a designer:
 
 Not done, and needed before a tenant sees this:
 
-- [ ] **Re-verify on a bench.** The 25 tests have not run since the rename; the last
-      green bench run was 21 tests under the old name.
+- [x] ~~Re-verify on a bench.~~ Done 2026-09-19 on `dev.berp.bizera.la`,
+      **Frappe 16.33.1 / ERPNext 16.34.2** — the v16 code path, which had never been
+      exercised. `branding_status()` on the live site reports
+      `resolved_from: Website Settings` and both platform assets `READY`.
 - [ ] Email template and PDF letterhead branding.
 - [ ] Browser check of Desk, login and mobile layouts per tenant. Neither suite
       touches the UI.
