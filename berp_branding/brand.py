@@ -57,14 +57,33 @@ PLATFORM_DEFAULTS = {
 	"app_name": DEFAULT_BRAND,
 	"app_logo": f"{ASSET_ROOT}/berp-logo.svg",
 	"favicon": f"{ASSET_ROOT}/berp-favicon.png",
+	# The Desk loading screen. Frappe renders
+	#     {{ splash_image or "/assets/frappe/images/frappe-framework-logo.svg" }}
+	# so leaving this unset means every bERP site shows the FRAPPE logo while the
+	# Desk boots — the one moment a user stares at a blank screen and reads it.
+	#
+	# The mark, not a lockup: Frappe caps the splash at max-width 200px, and
+	# CI-001 §3 puts the horizontal lockup's absolute minimum at 220px, below
+	# which the tagline must not be preserved. CI-001 §3 also calls for a
+	# dedicated small-size lockup without tagline as an official asset; the kit
+	# has no such file, so the mark alone is the spec-correct choice here.
+	"splash_image": f"{ASSET_ROOT}/berp-logo.svg",
 }
 
 #: site_config key -> Website Settings fieldname
+#:
+#: `berp_brand_splash` used to map to `banner_image`, which is the PORTAL banner,
+#: not a splash of any kind. The name promised one surface and delivered another,
+#: and it meant nothing was writing `splash_image` — the field Frappe actually
+#: uses for the Desk loading screen. Corrected here, with `berp_brand_banner`
+#: added for the portal banner it used to mean. Safe to change: no tenant has
+#: these keys set, they are still proposed values in the README.
 BRAND_FIELDS = {
 	"berp_brand_name": "app_name",
 	"berp_brand_logo": "app_logo",
 	"berp_brand_favicon": "favicon",
-	"berp_brand_splash": "banner_image",
+	"berp_brand_splash": "splash_image",
+	"berp_brand_banner": "banner_image",
 }
 
 

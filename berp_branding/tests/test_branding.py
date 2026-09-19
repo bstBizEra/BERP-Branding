@@ -110,6 +110,9 @@ class TestBrandAssets(_TestCase):
 			self.assertEqual(values["app_name"], DEFAULT_BRAND)
 			self.assertEqual(values["app_logo"], PLATFORM_DEFAULTS["app_logo"])
 			self.assertEqual(values["favicon"], PLATFORM_DEFAULTS["favicon"])
+			# The Desk loading screen: unset means Frappe's own logo, so this
+			# one must carry a platform default.
+			self.assertEqual(values["splash_image"], PLATFORM_DEFAULTS["splash_image"])
 			# banner_image has no platform default, so it stays absent
 			self.assertNotIn("banner_image", values)
 
@@ -118,7 +121,8 @@ class TestBrandAssets(_TestCase):
 			berp_brand_name="LaoCap ERP",
 			berp_brand_logo="/files/l.svg",
 			berp_brand_favicon="/files/f.png",
-			berp_brand_splash="/files/b.png",
+			berp_brand_splash="/files/s.png",
+			berp_brand_banner="/files/b.png",
 		):
 			values = branding()
 			self.assertEqual(set(values), set(BRAND_FIELDS.values()))
@@ -323,6 +327,19 @@ class TestPlatformDefaults(_TestCase):
 		with site_config(berp_brand_logo="javascript:alert(1)"):
 			resolved = branding()
 		self.assertEqual(resolved["app_logo"], PLATFORM_DEFAULTS["app_logo"])
+
+	def test_the_desk_splash_never_falls_back_to_frappes_logo(self):
+		"""Frappe renders `splash_image or frappe-framework-logo.svg`.
+
+		An unset splash_image is not a blank screen — it is the Frappe logo, on
+		the one screen a user watches while waiting. Worth its own test because
+		the failure is silent and looks like someone else's product.
+		"""
+		self.assertIn("splash_image", PLATFORM_DEFAULTS)
+		self.assertTrue(PLATFORM_DEFAULTS["splash_image"].startswith("/assets/berp_branding/"))
+		for key in BRAND_FIELDS:
+			frappe.conf.pop(key, None)
+		self.assertEqual(branding()["splash_image"], PLATFORM_DEFAULTS["splash_image"])
 
 	def test_every_platform_default_asset_is_built_and_served(self):
 		status = shipped_assets()
