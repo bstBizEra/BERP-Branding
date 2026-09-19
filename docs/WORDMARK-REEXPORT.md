@@ -1,6 +1,11 @@
 # Wordmark re-export requirement
 
-**Status:** open — needs Illustrator, cannot be fixed by script
+**Status:** RESOLVED 2026-09-19. `bERP_Logo_hTextOL.svg` and `bERP_Logo_vTextOL.svg`
+were re-exported with the tagline outlined — 0 `<text>` elements, 0 `font-family`
+references, 45 paths, no dangling references. Check `D4` passes on them. They ship
+as `berp-lockup-horizontal.svg` / `berp-lockup-vertical.svg`, namespaced `berp-*`.
+The original `bERP_Logo_hText.svg` / `vText.svg` still carry live text and should
+be retired from the kit or kept only as editable masters.
 **Affects:** `Brandkit/Logo/SVG/bERP_Logo_hText.svg`, `bERP_Logo_vText.svg`
 **Detected by:** `scripts/check_branding.py` check `D4`
 **Raised:** 2026-09-19
