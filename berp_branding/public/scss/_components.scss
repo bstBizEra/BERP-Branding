@@ -40,3 +40,82 @@ img[src*="/erpnext/icons/desktop_icons/"] {
 		filter: none;
 	}
 }
+
+// ── Density defaults per surface (DS-001 §16) ───────────────────────────────
+// §16 defines two modes and says which surfaces get which:
+//
+//     Forms -> Comfortable        Tables -> Compact available
+//     Dashboard -> Comfortable    Accounting -> Compact available
+//     Mobile -> Comfortable
+//
+// "Compact available" is not "Compact by default", so applying Comfortable
+// everywhere is the literal reading. Ruled 2026-09-20: Compact is the DEFAULT
+// for the record-listing surfaces, Comfortable stays the default everywhere
+// else. What that does and does not achieve is recorded below, because the
+// original justification for it was wrong.
+//
+// ── CORRECTION: --list-row-height does NOT size Frappe's data rows ─────────
+// This change was first argued as "44px rows cost roughly a third of the
+// visible rows in a list view". That claim was false and it should never have
+// been made: it came from measuring `.list-row-container, .list-row`, whose
+// FIRST match is the header row, and inferring the data rows from it without
+// ever measuring one.
+//
+// Measured properly — a data row's height while sweeping the variable live:
+//
+//     --list-row-height:  30px -> 55px    44px -> 55px
+//                         36px -> 55px    60px -> 55px
+//
+// Frappe's data rows are content-sized: the inner .list-row computes 55px with
+// no padding and min-height:auto, and ignores the property entirely. The
+// variable drives the HEADER row and nothing else.
+//
+// So this block does deliver a real density change in list views — the header,
+// the toolbar buttons and the filter inputs all drop to the Compact contract —
+// but it does NOT increase the number of records on screen, and nothing here
+// should be described as if it does. Densifying data rows is separate work
+// against content and line-height, not a token.
+//
+// ── THE TRAP THIS MIXIN EXISTS FOR ─────────────────────────────────────────
+// The first version of this rule set only the --berp-* tokens on the container
+// and expected Frappe's --list-row-height to follow, on the reasoning that
+// "var() resolves at the point of use". That is TRUE for a var() inside a
+// normal property (`height: var(--x)`) and FALSE for a var() inside another
+// CUSTOM PROPERTY's value, which resolves at the element where it is DECLARED.
+//
+//     :root { --list-row-height: var(--berp-row-height); }   <- computes to 44px
+//                                                               AT :root, and it
+//                                                               is that computed
+//                                                               44px that inherits
+//
+// Measured: --berp-row-height was 36px on the container while --list-row-height
+// was still 44px two elements down, and rows rendered at 44. Any element-scoped
+// density change must therefore RE-SUBSTITUTE the consuming properties at the
+// same element. That is the whole job of this mixin, and it is why the density
+// switch is not simply a token swap.
+@mixin berp-compact-density {
+	--berp-control-height: 32px;
+	--berp-control-height-lg: 40px;
+	--berp-row-height: 36px;
+	--berp-nav-item-height: 36px;
+	--berp-card-padding: 16px;
+
+	// Re-substituted here, not inherited — see above.
+	--btn-height: var(--berp-control-height);
+	--input-height: var(--berp-control-height);
+	--list-row-height: var(--berp-row-height);
+}
+
+// Frappe routes list, report and kanban all under a `List/` page route, so one
+// prefix match covers the three; `Report/` catches standalone query reports.
+.page-container[data-page-route^="List/"],
+.page-container[data-page-route^="Report/"] {
+	@include berp-compact-density;
+}
+
+// The explicit opt-in from DS-001A §D2 — `data-berp-density="compact"` on <html>
+// or any container. foundations/_dimensions.scss sets the bERP tokens for it;
+// this adds the Frappe-facing re-substitution that makes them take effect.
+[data-berp-density="compact"] {
+	@include berp-compact-density;
+}

@@ -1,0 +1,81 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// bERP Lao UI faces — self-hosted.
+//
+// WHY SELF-HOSTED, AGAINST ADR-003
+// ADR-003 records "Font delivery: Google Fonts CDN", and AGENTS.md Q3 records
+// that as "CDN assumed" — an open question, not a settled one. Self-hosting is
+// proposed here for three reasons, and ADR-003 should be amended or this
+// reverted; it must not be left ambiguous.
+//
+//   1. A CDN turns a rendering guarantee into a network condition. This project
+//      already ruled that unacceptable for print: BERP-LAO-ARCH-001 treats a
+//      missing Lao font as DOCUMENT-INTEGRITY risk, not typography, because a
+//      missing Lao face does not show boxes — it reorders combining marks and
+//      produces plausible, wrong Lao. The same failure on screen is the same
+//      class of defect. An ERP in Lao PDR that silently misrenders Lao when
+//      fonts.googleapis.com is slow or unreachable is not acceptable.
+//   2. It is a third-party request from behind an authenticated ERP, which is a
+//      data-residency question the project has a document for. Self-hosting
+//      removes it rather than answering it.
+//   3. Frappe already self-hosts Inter through desk.bundle.scss. The Desk has no
+//      external font host today; adding one is a new dependency for one face.
+//
+// LICENCE: Phetsarath OT and Noto Sans Lao are both SIL OFL 1.1, which permits
+// redistribution. Files fetched from Google Fonts, unmodified.
+//
+//   phetsarath-400.woff2          14,976 B  sha256 c2722096…
+//   phetsarath-700.woff2          13,488 B  sha256 39ec8a2c…
+//   noto-sans-lao-variable.woff2  21,520 B  sha256 c1a81b4f…
+//
+// Noto Sans Lao is served by Google as ONE variable file for every weight —
+// 400, 600 and 700 all resolved to the same URL and the same 21,520 bytes — so
+// it ships once with a weight RANGE rather than three identical copies.
+//
+// THIS IS THE SCREEN CONTRACT ONLY. Server-side PDF rendering is governed by the
+// separate bERP font ADR and requires STATIC faces installed in the server font
+// environment, never @font-face. The two are different deliverables for the same
+// typeface and must not be conflated.
+//
+// font-display: swap — text paints immediately in the fallback and reflows when
+// the face lands. For Lao that is the right trade: a brief metric shift beats
+// invisible text, and the fallback chain is itself Lao-capable.
+// ─────────────────────────────────────────────────────────────────────────────
+
+$berp-font-path: "/assets/berp_branding/fonts";
+
+@font-face {
+	font-family: "Phetsarath";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("#{$berp-font-path}/phetsarath-400.woff2") format("woff2");
+	// Lao block, plus the joiners and dotted circle that Lao shaping relies on,
+	// and Latin basics so mixed Lao/English runs do not fragment mid-word.
+	unicode-range: U+0E81-0EDF, U+200C-200D, U+25CC, U+0000-00FF, U+0131,
+		U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: "Phetsarath";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("#{$berp-font-path}/phetsarath-700.woff2") format("woff2");
+	unicode-range: U+0E81-0EDF, U+200C-200D, U+25CC, U+0000-00FF, U+0131,
+		U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// Fallback face. CI-001 §10 names it as the fallback rather than decoration:
+// DS-001 §32 requires the Lao test corpus to include Pali/Sanskrit-extension
+// characters "covered by approved fallback", so this face has a real job where
+// Phetsarath's coverage ends.
+@font-face {
+	font-family: "Noto Sans Lao";
+	font-style: normal;
+	font-weight: 100 900;   // one variable file covers the whole range
+	font-display: swap;
+	src: url("#{$berp-font-path}/noto-sans-lao-variable.woff2") format("woff2");
+	unicode-range: U+0E81-0EDF, U+200C-200D, U+25CC, U+0000-00FF, U+FEFF, U+FFFD;
+}

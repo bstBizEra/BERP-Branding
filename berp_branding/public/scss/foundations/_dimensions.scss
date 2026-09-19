@@ -58,8 +58,15 @@
 	// so no external font host is introduced). Lao -> Noto Sans Lao per the
 	// CI-001 §10 fallback contract. The PRINT/PDF font contract is governed by
 	// the separate bERP font ADR and is deliberately NOT redefined here.
-	--berp-font-ui: Inter, "Noto Sans Lao", system-ui, -apple-system, "Segoe UI",
-		Roboto, sans-serif;
+	// Latin -> Inter (bundled by Frappe). Lao -> Phetsarath, the approved bERP
+	// Lao family per AGENTS.md §3.6, with Noto Sans Lao as CI-001 §10's named
+	// fallback. Both Lao faces are self-hosted — see foundations/_fonts.scss for
+	// why that departs from ADR-003.
+	//
+	// Order matters: Inter first so Latin keeps its metrics, then the Lao faces,
+	// which carry no Latin glyphs of consequence and so only claim the Lao range.
+	--berp-font-ui: Inter, Phetsarath, "Noto Sans Lao", system-ui, -apple-system,
+		"Segoe UI", Roboto, sans-serif;
 	--berp-font-mono: "SF Mono", SFMono-Regular, ui-monospace, "Cascadia Mono",
 		Menlo, Consolas, monospace;
 
