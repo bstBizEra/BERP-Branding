@@ -1,6 +1,6 @@
 # BERP-DS-001A — ERPNext Rebranding Surface Inventory & Override Contract
 
-**Version:** 0.1 (draft for approval)
+**Version:** 0.2 — Part D ruled by OP-Vily, 2026-09-19. Stage 1 unblocked.
 **Status:** Controlled unit. Mandated by BERP-DS-001 §"next controlled unit", which
 gates further theme code behind this document.
 **Authority:** Subordinate to BERP-CI-001 (brand primitives) and BERP-DS-001
@@ -216,11 +216,11 @@ name.
 | `--font-stack` | 6 | Inter stack | Inter + Noto Sans Lao |
 | `--navbar-height` | 6 | 48px | per DS-001 |
 | `--primary-color` | 5 | `var(--gray-900)` | Teal 700 |
-| `--btn-height` | 5 | 28px | **blocked on §D2** |
+| `--btn-height` | 5 | 28px | **44 Comfortable / 32 Compact (§D2)** |
 | `--sidebar-hover-color` | 5 | upstream | Teal tint |
 | `--sidebar-select-color` | 3 | upstream | Teal tint |
 | `--btn-primary` | 2 | `var(--gray-900)` | Teal 700 |
-| `--input-height` | 2 | 28px | **blocked on §D2** |
+| `--input-height` | 2 | 28px | **44 Comfortable / 32 Compact (§D2)** |
 | `--control-bg-on-gray` | 2 | `var(--gray-200)` | Control on tinted surface |
 | `--navbar-bg` | 1 | upstream | Surface white |
 | `--brand-color` | **0** | `var(--primary)` | **Dead — do not spend effort here** |
@@ -243,8 +243,9 @@ pair that failed on the login surface at Neutral 400. It must be set to Neutral
 
 `--btn-height` (5), `--input-height` (2) and the two density-bearing dimensions
 are deliberately listed even though their use counts are low: they cascade
-through Bootstrap-derived rules that consume them indirectly, and they are the
-properties blocked on the §D2 ruling.
+through Bootstrap-derived rules that consume them indirectly, and they carry the
+§D2 density ruling — 44px Comfortable, 32px Compact, selected by a body-level
+attribute rather than by a second stylesheet.
 
 ## A5. The literal tail — what variables cannot reach
 
@@ -393,6 +394,13 @@ leave dark unbranded, not to write `:root`.
 
 This is a testable rule and §C3 makes it one.
 
+**Scope, per the §D6 ruling:** both themes ship in v1. Every foundations token is
+therefore dual-valued from the outset, and the dark value is derived, not
+inverted — Teal 700 `#117461` fails contrast on a dark surface and needs a
+lighter step. Light and dark are kept as **separate token maps** rather than
+interleaved, so that scoping back to light alone remains a deletion rather than
+a rework if the timeline tightens.
+
 ## A9. Typography
 
 `desk.bundle.scss` imports `frappe/public/css/fonts/inter/inter.scss` — **Inter is
@@ -455,7 +463,14 @@ greppable break, not a silent one, and §C4's regeneration drill catches it.
   themes; overwriting them recolours states that must stay neutral.
 - **B1.2 — Both themes, always.** Every block is written twice, against
   `:root, [data-theme="light"]` and `[data-theme="dark"]` (A8). A `:root`-only
-  block is a defect.
+  block is a defect. Per §D6 both themes are in v1 scope, and the dark value is
+  derived from CI-001 for a dark surface, never produced by inverting the light
+  value.
+- **B1.6 — Density is a token set.** Per §D2, control and row dimensions resolve
+  through `--berp-control-height` / `--berp-row-height`, which take Comfortable
+  (44px) or Compact (32px / 30px) values selected by a body-level attribute.
+  A component that hardcodes either figure is a defect. Compact is the default
+  for list, report, kanban and grid views.
 - **B1.3 — Tokens come from the token source.** Values are references into the
   bERP foundations layer, not hex literals typed at the point of use. DS-001 §39
   forbids raw values in governed component code; this is that rule applied.
@@ -662,11 +677,16 @@ known-good case.**
 
 ---
 
-# Part D — Governance decisions required before Stage 1
+# Part D — Governance decisions
 
-These are conflicts between controlled documents, or between a controlled
-document and shipped code. They are not implementation questions and this
-document does not resolve them. Each carries a recommendation.
+These were conflicts between controlled documents, or between a controlled
+document and shipped code. **All six were ruled by OP-Vily on 2026-09-19** and
+are recorded here as decisions. Each entry keeps the original analysis, so the
+reasoning behind the ruling survives; the **Ruling** line is what governs.
+
+Two rulings depart from the recommendation given — D6 (dark mode) and part of
+D4 (palette). Both are recorded as given, with the cost of each stated plainly
+so the next session inherits the trade-off and not just the outcome.
 
 ## D1. The login surface contradicts DS-001 §1
 
@@ -683,6 +703,11 @@ the controlled document and it currently describes something else.
 specification, rather than rebuilding the login to match a superseded spec. A
 controlled document that disagrees with approved, shipped, tested work should be
 corrected, not obeyed.
+
+> **RULING (2026-09-19): amend DS-001 §1 to the split layout.** The shipped auth
+> surface is authoritative. DS-001 §1's card specification is superseded and is
+> not to be inherited by Desk components. Action: revise DS-001 §1; no code
+> change.
 
 ## D2. Control height — CI-001 §21 vs DS-001 §16
 
@@ -702,6 +727,25 @@ list view will cost roughly a third of the visible rows — an operational
 regression that no amount of brand fidelity justifies. Density should be a token
 set, not a single value.
 
+> **RULING (2026-09-19): 44px Comfortable, plus a Compact density set.** DS-001
+> §16 is corrected to 44px. Density becomes a **token set, not a single value**,
+> with two named modes:
+>
+> | Token | Comfortable | Compact |
+> |---|---|---|
+> | `--berp-control-height` | 44px | 32px |
+> | `--berp-row-height` | 44px | 30px (upstream parity) |
+> | `--berp-control-padding-y` | scaled to 44 | scaled to 32 |
+>
+> Comfortable is the default for forms, dialogs and the auth surface. Compact is
+> the default for list, report, kanban and grid views, where row count is the
+> operational currency. The mode is selected by a body-level attribute so a
+> single token block serves both; it is **not** two stylesheets.
+>
+> Stage 1 must ship both modes together. Shipping Comfortable alone would put a
+> 44px row into the list view and cost roughly a third of visible rows — the
+> exact regression the Compact set exists to prevent.
+
 ## D3. Token layer not yet extracted — DS-001 §35/§39
 
 DS-001 §35 requires tokens to flow `Token Source → berp_branding → tokens.css`,
@@ -714,6 +758,12 @@ depends on the foundations layer existing.
 as the single source, refactor `berp_auth.css` to consume it, and build the Desk
 sheet on it from the start. This is a prerequisite for Stage 1, not a follow-up.
 Preflight check E7 enforces it thereafter.
+
+> **RULING (2026-09-19): proceed as recommended.** Not raised as an open question
+> because DS-001 §§35/39 already mandate it and Tier 1 cannot be built without
+> it. Executed as Stage 0.3. The foundations layer must carry the D2 density sets
+> and the D6 dark values from the outset, so it is built once rather than
+> retrofitted twice.
 
 ## D4. `#2EB990` is a locked-palette violation, not an undocumented colour
 
@@ -742,6 +792,27 @@ correct the artwork to the locked palette. Leaving it as a standing warning mean
 the preflight's palette check stops carrying information, which is worse than
 either resolution.
 
+> **RULING (2026-09-19): both, split by value.** The ruling selected *extend §7
+> for `#2EB990`* and *correct the artwork to the locked palette*. Those two
+> conflict on `#2EB990` alone, so they are reconciled here by intent — admit the
+> one deliberate colour, correct the five accidental ones:
+>
+> | Value | Disposition | Rationale |
+> |---|---|---|
+> | `#2EB990` | **Admit** — extend CI-001 §6/§7 with a stated role | Deliberate design: the icon's background plate. Needs a named role and a contrast note, not deletion |
+> | `#231F20` | Correct to Charcoal | Near-black off the ramp by 2 points; no design intent |
+> | `#67686B` | Correct to the nearest Slate step | Off-ramp grey |
+> | `#CFD1D2` | Correct to the nearest neutral step | Off-ramp grey |
+> | `#FDFEFF`, `#FCFEFE` | Correct to White `#FFFFFF` | Export artefacts — sub-perceptual offsets from white |
+>
+> After this, D8 should pass rather than warn, and its severity is raised from
+> WARN to FAIL so a future off-palette value cannot accumulate silently.
+>
+> **If this split misreads the intent**, the alternative readings are: correct
+> `#2EB990` too (D8 passes with no §7 change, but the icon plate changes colour),
+> or admit all six (no artwork work, but §7 stops being a locked palette in any
+> meaningful sense). Flag before Stage 3 if either is preferred.
+
 ## D5. `bERP_Logo_hText.svg` is named the master but fails the live-text check
 
 CI-001 §4 names `bERP_Logo_hText.svg` as the LOGO-01 master. That file carries a
@@ -759,10 +830,20 @@ ship as `berp-lockup-horizontal.svg` and `berp-lockup-vertical.svg`, with zero
 master, and retire `hText.svg` / `vText.svg` from the kit. D4 then passes and the
 preflight returns to a clean baseline.
 
+> **RULING (2026-09-19): amend CI-001 §4 to name the outlined file as LOGO-01
+> master.** `bERP_Logo_hTextOL.svg` becomes the master; `hText.svg` and
+> `vText.svg` are retired from the kit. Preflight D4 then passes and the
+> `--assets` baseline returns to clean.
+
 **Related gap:** CI-001 §3 calls for a small-size lockup without tagline. It does
 not exist in the kit. The Desk splash constrains to `max-width: 200px` (A7), which
 is precisely the case that lockup is for. Until it exists the splash uses the
 icon-only mark, which is acceptable but is not what §3 specifies.
+
+> **RULING (2026-09-19): commission the small-size lockup.** Designer deliverable,
+> outlined text (per D5), no tagline, legible at 200px wide. It ships as
+> `berp-lockup-small.svg` and becomes the splash asset. Until it lands, the splash
+> keeps the icon-only mark; this does **not** block Stage 1.
 
 ## D6. Dark mode — in or out of v1
 
@@ -776,41 +857,80 @@ upstream, with dark-mode tokens as a defined Stage 4. Budget it as real work —
 `dark.scss` alone is 271 lines with 130 `var()` references — rather than assuming
 it falls out of the light theme.
 
+> **RULING (2026-09-19): both themes in v1.** Dark mode is in scope for Stage 1,
+> not deferred to Stage 4. This departs from the recommendation, and the cost is
+> stated here so it is inherited deliberately:
+>
+> - Every token in the foundations layer needs **two values**, not one. The dark
+>   value is a derivation, not an inversion — Teal 700 `#117461` on a dark surface
+>   fails contrast and needs a lighter step.
+> - **Fifteen files** declare dark blocks upstream (A8); `dark.scss` alone is 271
+>   lines with 130 `var()` references.
+> - Every contrast pair must be measured **twice** (B5.4), roughly doubling the
+>   accessibility gate.
+> - Realistically this makes Stage 1 about twice the size of the light-only
+>   version.
+>
+> The benefit is a complete identity at first release and no second pass through
+> the same token layer, which is the stronger position if the timeline allows it.
+> The foundations layer of D3 must therefore be built dual-valued from the
+> outset — this is the main reason Stage 0.3 cannot be deferred.
+>
+> **De-scoping route, if the timeline tightens:** scope the shipped blocks to
+> `[data-theme="light"]` and drop the dark values. That degrades to the
+> recommended option cleanly and without rework, provided the foundations layer
+> keeps light and dark as separate token maps rather than interleaving them.
+> Build it that way.
+
 ---
 
 # Part E — Sequenced plan for the Desk rebrand
 
-Staged so that the highest-visibility, lowest-risk change lands first, and so
-that nothing depends on an unresolved §D decision.
+Staged so that the highest-visibility, lowest-risk change lands first. **All six
+§D decisions are ruled, so no stage is blocked on governance.** The rulings
+change two things against the draft plan: dark mode moves from Stage 4 into
+Stage 1, and density becomes a two-mode token set rather than a single value.
 
 ## Stage 0 — Corrections and prerequisites (no new theme code)
 
-Blocked by: nothing. Unblocks: everything.
+Blocked by: nothing. Unblocks: everything. **Start here.**
 
 | # | Action | Tier | Source |
 |---|---|---|---|
 | 0.1 | Set Navbar Settings `app_logo`; add it to `BRAND_FIELDS` and `PLATFORM_DEFAULTS` so the legacy `/desk` page stops resolving to the Frappe logo | 0 | A7 |
 | 0.2 | Update the `hooks.py` comment to cite the measured `app_logo_url` resolver and the two-entry list observed on the bench | — | A7 |
-| 0.3 | Extract `foundations/_tokens.scss`; refactor `berp_auth.css` to consume it | — | D3 |
+| 0.3 | Extract `foundations/_tokens.scss` — **dual-valued (light + dark, separate maps) and carrying both density modes** from the outset; refactor `berp_auth.css` to consume it | — | D3, D2, D6 |
 | 0.4 | Add preflight section E (E1–E9) | — | C2 |
 | 0.5 | Commit `scripts/recon_desk_surface.sh` and record the §A baseline | — | C4 |
 | 0.6 | Resolve the `lao_regional` module collision (`lao_berp` and `berp_lao` both declare it) | — | open item |
 | 0.7 | Durable compose fix for the frontend container's asset overlay | — | A2 |
+| 0.8 | Amend **DS-001 §1** to the split login layout; amend **DS-001 §16** to 44px and add the Compact set | — | D1, D2 |
+| 0.9 | Amend **CI-001 §4** to name `hTextOL.svg` as LOGO-01 master; retire `hText`/`vText`. Amend **§6/§7** to admit `#2EB990` with a stated role | — | D5, D4 |
+| 0.10 | Correct the five off-palette artwork values; raise preflight D8 from WARN to FAIL | — | D4 |
+| 0.11 | Commission `berp-lockup-small.svg` (outlined, no tagline, legible at 200px) — does not block Stage 1 | — | D5 |
 
 ## Stage 1 — Token layer (Tier 1)
 
-Blocked by: 0.3, and the §D2 density ruling.
+Blocked by: 0.3 only.
 
 Ship `berp_branding/public/scss/berp_desk.bundle.scss`, declared through
-`app_include_css`, retargeting the semantic properties of A4 against both
-`[data-theme="light"]` and `[data-theme="dark"]` — or light only, per §D6.
+`app_include_css`, retargeting the semantic properties of A4 against **both**
+`:root, [data-theme="light"]` and `[data-theme="dark"]` (§D6), with the two
+density modes of §D2.
 
 Expected reach on the measured evidence: the nine P1 surfaces of A6, seven of
 which carry four or fewer hardcoded literals. This is the stage that makes the
 Desk read as bERP, and it contains no selector overrides at all.
 
-Gate: C2 preflight green; C3 computed-value assertions green in the scoped
-theme(s); contrast measured on every new pair.
+**Size, stated honestly.** The §D6 ruling roughly doubles this stage against the
+light-only version: every token dual-valued, fifteen upstream dark-declaring
+files to check, and every contrast pair measured twice. Budget accordingly. If
+the timeline tightens mid-stage, the de-scope route in §D6 is a deletion of the
+dark maps, not a rework — provided 0.3 kept them separate.
+
+Gate: C2 preflight green (including E5, which fails a light-only block); C3
+computed-value assertions green in **both** themes; contrast measured on every
+new pair in both themes; Compact and Comfortable both verified on a list view.
 
 ## Stage 2 — Typography (Tier 1 + asset)
 
@@ -831,7 +951,7 @@ appearance. A missing Lao face reorders marks rather than showing boxes, so
 
 ## Stage 3 — Component tail (Tier 2)
 
-Blocked by: Stage 1, and the §D4 palette ruling.
+Blocked by: Stage 1. (§D4 is ruled; 0.10 carries the artwork correction.)
 
 Scoped selector overrides for the literal tail of A5, in priority order:
 `#00b2ff` (18 occurrences, a competing brand accent), then the Bootstrap state
@@ -841,19 +961,21 @@ document output).
 
 Every rule specificity-measured per B2.1 and inventoried per B2.3.
 
-## Stage 4 — Structural and dark mode (Tier 3, plus §D6)
+## Stage 4 — Structural (Tier 3)
 
-Blocked by: Stages 1–3, §D1 and §D6 rulings.
+Blocked by: Stages 1–3.
 
-Any layout change the Desk requires, via `{{ super() }}` template extension only;
-the `theme-color` meta override; the dark-mode token set if §D6 rules it in.
+Any layout change the Desk requires, via `{{ super() }}` template extension only,
+and the `theme-color` meta override. **Dark mode has moved out of this stage into
+Stage 1** per §D6, which is what leaves Stage 4 small.
 
 ## Stage 5 — Identity completion
 
-Blocked by: §D5 ruling and the missing small-size lockup.
+Blocked by: delivery of `berp-lockup-small.svg` (0.11) for the splash item only;
+the rest is unblocked.
 
-Portal navbar branding, the apps-screen tile, the splash lockup once §D5's
-small-size asset exists, and the Lao translation file for `berp_branding`.
+Portal navbar branding, the apps-screen tile, the splash lockup once 0.11 lands,
+and the Lao translation file for `berp_branding`.
 
 ---
 
@@ -901,3 +1023,4 @@ re-run the 6 skipped font tests; commit-or-discard `berp_lao/translations/lo.csv
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-09-19 | Initial inventory and contract. Measured on dev bench. Awaiting §D rulings. |
+| 0.2 | 2026-09-19 | All six §D decisions ruled by OP-Vily. D2: 44px Comfortable + 32px Compact as a token set. D6: both themes in v1 (departs from recommendation; cost and de-scope route recorded). D1: DS-001 §1 amended to the split layout. D4: `#2EB990` admitted, five values corrected. D5: outlined file becomes LOGO-01 master; small lockup commissioned. Part E resequenced — no stage now blocked on governance. |
