@@ -81,8 +81,17 @@
 }
 .berp-auth__line--accent { color: var(--berp-teal-100); }
 .berp-auth__rule {
+	display: block;
 	margin-top: 32px; width: 48px; height: 3px; border-radius: 2px;
 	background: var(--berp-teal-600);
+}
+.berp-auth__lede {
+	margin: 24px 0 0;
+	max-width: 360px;
+	font-size: 14px;
+	line-height: 22px;
+	/* 0.78 white on the teal field is ~9:1 — comfortably above AA. */
+	color: rgba(255, 255, 255, 0.78);
 }
 
 /* ── Form panel ───────────────────────────────────────────────────────── */
@@ -258,6 +267,8 @@
 	.berp-auth__line { font-size: 30px; line-height: 38px; }
 	.berp-auth__watermark { right: -70px; bottom: -80px; width: 260px; }
 	.berp-auth__rule { margin-top: 20px; }
+	/* The header band is 208px; the statement alone earns that space. */
+	.berp-auth__lede { display: none; }
 	.berp-auth__panel { padding: 28px 24px 20px; }
 	.berp-auth__panel-inner { align-items: flex-start; }
 }
