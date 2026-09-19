@@ -48,7 +48,16 @@
 	// selection — CI-001 §19 left-nav selected item
 	--berp-selection-surface: var(--berp-teal-50);
 	--berp-selection-border: var(--berp-teal-300);
-	--berp-selection-text: var(--berp-teal-900);
+	--berp-selection-text: var(--berp-teal-900);   // DS-001 §7 selection.text
+
+	// Navigation-specific, because the two parents differ by one step here.
+	// DS-001 §7 puts selection.text at teal.900; CI-001 §19 says the left-nav
+	// selected item is "Teal 700 icon/text". §19 is the component-level spec for
+	// this exact element, so the sidebar follows it — 5.19:1 on Teal 50, PASS.
+	// The indicator is separated from the text because a 3px bar at teal.900
+	// reads as near-black rather than as teal.
+	--berp-nav-selected-fg: var(--berp-teal-700);
+	--berp-nav-indicator: var(--berp-teal-700);
 
 	// borders — DS-001 §17
 	--berp-border-default: var(--berp-neutral-200);
@@ -84,9 +93,19 @@
 	--berp-action-subtle: var(--berp-teal-950);
 	--berp-action-subtle-text: var(--berp-teal-200);
 
-	--berp-selection-surface: var(--berp-teal-950);
+	// teal.950 was the first choice and measured 1.34:1 against the dark page —
+	// a selected row would have been all but invisible. Frappe's dark sidebar is
+	// darker still (#0F0F0F), so the selection surface steps up to teal.900.
+	--berp-selection-surface: var(--berp-teal-900);
 	--berp-selection-border: var(--berp-teal-700);
-	--berp-selection-text: var(--berp-teal-200);
+	--berp-selection-text: var(--berp-teal-200);   // 6.42:1 on teal.900
+
+	// Derived, not copied: CI-001 §19's Teal 700 is a LIGHT-theme instruction.
+	// On the teal.900 chip it measures 1.7:1 and would be unreadable, so the
+	// dark theme steps to teal.200 for text (6.42:1) and teal.300 for the bar,
+	// which stays visible against both the chip and Frappe's #0F0F0F sidebar.
+	--berp-nav-selected-fg: var(--berp-teal-200);
+	--berp-nav-indicator: var(--berp-teal-300);
 
 	--berp-border-default: var(--berp-neutral-700);
 	--berp-border-strong: var(--berp-neutral-500);

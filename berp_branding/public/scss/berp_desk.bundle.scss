@@ -93,7 +93,14 @@
 	--sidebar-select-color: var(--berp-selection-surface);
 	--sidebar-hover-color: var(--berp-surface-subtle);
 	--sidebar-border-color: var(--berp-border-default);
-	--sidebar-active-color: var(--berp-text-primary);
+	// BACKGROUND of the selected row, not a text colour. Upstream:
+	//   .active-sidebar { background: var(--sidebar-active-color); … }
+	//   :root            --sidebar-active-color: rgba(255,255,255,1)
+	// Stage 1 read the name as a text colour and pointed it at --berp-text-primary.
+	// Measured consequence: the selected row rendered #1F2021 with a #525252
+	// label — 2.09:1, against a 4.5 floor — and pure WHITE in dark mode. On the
+	// primary navigation element. CI-001 §19 wants Teal 50/100 here.
+	--sidebar-active-color: var(--berp-selection-surface);
 
 	// ── Density — DS-001 §16, flowing into Frappe's dimension properties ────
 	// Upstream ships 28px controls and 30px rows. These are the properties that
@@ -158,7 +165,7 @@
 	--sidebar-select-color: var(--berp-selection-surface);
 	--sidebar-hover-color: var(--berp-surface-subtle);
 	--sidebar-border-color: var(--berp-border-default);
-	--sidebar-active-color: var(--berp-text-primary);
+	--sidebar-active-color: var(--berp-selection-surface);
 
 	--btn-height: var(--berp-control-height);
 	--input-height: var(--berp-control-height);

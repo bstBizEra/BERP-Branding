@@ -119,3 +119,54 @@ img[src*="/erpnext/icons/desktop_icons/"] {
 [data-berp-density="compact"] {
 	@include berp-compact-density;
 }
+
+// ── Left navigation — CI-001 §19 ────────────────────────────────────────────
+// The spec, verbatim:
+//
+//     Selected item:
+//       * Teal 50/100 background
+//       * Teal 700 icon/text
+//       * Optional 3 px teal indicator
+//     Do not use a large solid-green sidebar as the default bERP interface.
+//
+// The background is Tier 1 (--sidebar-active-color, fixed in the token bundle).
+// The icon/text colour and the indicator have no upstream variable, so they are
+// Tier 2 — these rules and nothing more. The sidebar SURFACE is deliberately
+// left alone: §19's last line rules out a solid teal panel, and upstream's
+// neutral sidebar already satisfies it.
+//
+// MEASURED, both themes:
+//   light  Teal 700 #117461 on Teal 50  #ECF7F5   5.19:1  PASS  (§19 literal)
+//   dark   Teal 200 #B5DED6 on Teal 900 #0C5042   6.42:1  PASS  (derived —
+//          §19's Teal 700 measures 1.7:1 on the dark chip and is unusable)
+//
+// THE INDICATOR IS NOT OPTIONAL HERE, and the reason is measurable. On the
+// light sidebar (#F8F8F8) a Teal 50 chip is a very low-contrast surface — it
+// reads as selected mainly through the text colour. The 3px bar restores a
+// non-colour-dependent cue, which also satisfies "never communicate state by
+// colour alone" (CI-001 §8). It is drawn as an inset shadow rather than a
+// border so it follows upstream's 8px radius and adds no layout width.
+.body-sidebar .standard-sidebar-item.active-sidebar,
+.standard-sidebar .standard-sidebar-item.active-sidebar {
+	// Upstream sets box-shadow: var(--shadow-sm) here; keep it and add the bar.
+	box-shadow: inset 3px 0 0 0 var(--berp-nav-indicator), var(--shadow-sm);
+}
+
+// Label and icon. Depth is matched to upstream's own label rule rather than
+// escalated — the label was computing var(--text-muted), so a single extra
+// class is enough to win without !important.
+.body-sidebar .standard-sidebar-item.active-sidebar .sidebar-item-label,
+.body-sidebar .standard-sidebar-item.active-sidebar a,
+.standard-sidebar .standard-sidebar-item.active-sidebar .sidebar-item-label,
+.standard-sidebar .standard-sidebar-item.active-sidebar a {
+	color: var(--berp-nav-selected-fg);
+	font-weight: var(--berp-weight-medium);
+}
+
+.body-sidebar .standard-sidebar-item.active-sidebar svg,
+.standard-sidebar .standard-sidebar-item.active-sidebar svg {
+	// Frappe's desk icons paint through --icon-stroke / --icon-fill rather than
+	// currentColor, so both are retargeted for the selected row only.
+	--icon-stroke: var(--berp-nav-selected-fg);
+	color: var(--berp-nav-selected-fg);
+}
