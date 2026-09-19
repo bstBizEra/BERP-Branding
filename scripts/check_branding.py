@@ -828,6 +828,54 @@ def check_declared_assets(app_root: Path, package: str, hooks: dict) -> None:
 			sys.modules.pop(name, None)
 
 
+def check_svg_references(assets_root: Path | None, app_root: Path, package: str | None) -> None:
+	"""
+	Every internal SVG reference must resolve to an id defined in the same file.
+
+	This check exists because namespacing the shipped mark broke it. Prefixing
+	id="" and url(#) but NOT xlink:href="#" left ten gradients inheriting their
+	stops from an id that no longer existed. Ten of eleven shapes rendered
+	invisible and the login page showed a sliver.
+
+	It is the D3/D5 blind spot: those check that an SVG is SAFE and NAMESPACED,
+	neither of which implies it is INTACT. Nothing errors on a dangling reference —
+	the shape just does not paint.
+
+	Note for anyone verifying this by eye: ImageMagick is not a usable judge here.
+	Its svg delegate wants rsvg-convert, and without it the MSVG fallback cannot do
+	gradient xlink inheritance at all — it renders the KNOWN-GOOD kit file as the
+	same sliver. Use a browser.
+	"""
+	targets = []
+	if package:
+		public = app_root / package / "public"
+		if public.is_dir():
+			targets += sorted(public.rglob("*.svg"))
+	if assets_root and assets_root.is_dir():
+		targets += sorted(assets_root.rglob("*.svg"))
+	if not targets:
+		record(SKIP, "D7", "SVG internal references all resolve", "no SVG found")
+		return
+
+	broken = []
+	for svg in targets:
+		text = svg.read_text(encoding="utf-8", errors="replace")
+		ids = set(re.findall(r'id="([^"]+)"', text))
+		refs = set(re.findall(r"url\(#([^)]+)\)", text)) | set(
+			re.findall(r'(?:xlink:)?href="#([^"]+)"', text)
+		)
+		dangling = sorted(refs - ids)
+		if dangling:
+			broken.append(f"{svg.name}: {', '.join(dangling)}")
+	check(
+		"D7",
+		"SVG internal references all resolve",
+		not broken,
+		"; ".join(broken) + " — the referencing shapes will not paint",
+		f"{len(targets)} SVG, every url(#) and href(#) resolves",
+	)
+
+
 # ─── Reporting ────────────────────────────────────────────────────────────────
 
 GLYPH = {PASS: "PASS", FAIL: "FAIL", WARN: "WARN", SKIP: "SKIP"}
@@ -878,6 +926,7 @@ def main() -> int:
 	check_assets(args.assets.resolve() if args.assets else None, app_root, package)
 	if package and package_dir:
 		check_declared_assets(app_root, package, hooks)
+	check_svg_references(args.assets.resolve() if args.assets else None, app_root, package)
 
 	return report(args.quiet)
 

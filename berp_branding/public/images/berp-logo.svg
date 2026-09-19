@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- bERP platform mark. Source: Brandkit/Logo/SVG/bERP_Logo_Icon.svg.
-     ids and classes namespaced berp-* so this is safe to inline. Do not edit
-     by hand: re-derive from the kit. -->
-<svg id="berp-Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 722.62 888.81">
+     ids, url(#) and xlink:href(#) all namespaced berp-* so this is safe to
+     inline. Do not edit by hand: re-derive from the kit. -->
+<svg width="722.62" height="888.81" id="berp-Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 722.62 888.81">
   <defs>
     <style>
       .berp-cls-1 {
@@ -53,16 +53,16 @@
       <stop offset="0" stop-color="#76cabb"/>
       <stop offset="1" stop-color="#17997f"/>
     </linearGradient>
-    <linearGradient id="berp-linear-gradient-2" x1="62.4" y1="281.56" x2="87.32" y2="280.38" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-3" x1="411.23" y1="415.69" x2="224.2" y2="476.93" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-4" x1="431.09" y1="528.76" x2="699.22" y2="303.67" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-5" x1="320.17" y1="720.42" x2="508.85" y2="725.38" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-6" x1="267.88" y1="503.75" x2="231.46" y2="761.95" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-7" x1="385.94" y1="552.63" x2="507.22" y2="416.33" gradientTransform="translate(539.89 -166.47) rotate(54.19)" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-8" x1="308.41" y1="539.02" x2="248.82" y2="556.67" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-9" x1="411.1" y1="728.77" x2="296.9" y2="538.43" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-10" x1="513.67" y1="667.22" x2="399.47" y2="476.89" xlink:href="#linear-gradient"/>
-    <linearGradient id="berp-linear-gradient-11" x1="181.7" y1="351.43" x2="123.55" y2="2.55" xlink:href="#linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-2" x1="62.4" y1="281.56" x2="87.32" y2="280.38" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-3" x1="411.23" y1="415.69" x2="224.2" y2="476.93" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-4" x1="431.09" y1="528.76" x2="699.22" y2="303.67" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-5" x1="320.17" y1="720.42" x2="508.85" y2="725.38" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-6" x1="267.88" y1="503.75" x2="231.46" y2="761.95" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-7" x1="385.94" y1="552.63" x2="507.22" y2="416.33" gradientTransform="translate(539.89 -166.47) rotate(54.19)" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-8" x1="308.41" y1="539.02" x2="248.82" y2="556.67" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-9" x1="411.1" y1="728.77" x2="296.9" y2="538.43" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-10" x1="513.67" y1="667.22" x2="399.47" y2="476.89" xlink:href="#berp-linear-gradient"/>
+    <linearGradient id="berp-linear-gradient-11" x1="181.7" y1="351.43" x2="123.55" y2="2.55" xlink:href="#berp-linear-gradient"/>
   </defs>
   <g id="berp-Layer_1-2" data-name="Layer 1">
     <g>
