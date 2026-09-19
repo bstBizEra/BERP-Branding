@@ -69,7 +69,9 @@
 	pointer-events: none;
 }
 .berp-auth__lockup { position: relative; display: flex; align-items: center; gap: 14px; }
-/* CI-001 §3: symbol recommended 32px, absolute minimum 24px. 38px here. */
+/* CI-001 §3: symbol recommended 32px, absolute minimum 24px. 38px here.
+   berp-logo-inverse.svg is cropped to the same box as berp-logo.svg, so these
+   proportions are the artwork's own — nothing is being stretched to fit. */
 .berp-auth__mark { width: 31px; height: 38px; flex-shrink: 0; }
 .berp-auth__wordmark {
 	font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: var(--berp-n-0);

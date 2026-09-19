@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="1045.79" height="1045.79" id="berp-Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1045.79 1045.79">
+<!-- bERP mark, inverse (light) treatment for dark fields.
+     Derived from Brandkit IconBgGreen by removing its background plate and
+     cropping the tile padding, so its box matches berp-logo.svg exactly.
+     Do not edit by hand: re-derive from the kit. -->
+<svg width="680.84" height="837.43" id="berp-Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="182.48 104.19 680.84 837.43">
   <defs>
     <style>
       .berp-cls-1 {
