@@ -140,10 +140,23 @@
 	display: block; margin-bottom: 6px;
 	font-size: 13px; line-height: 20px; font-weight: 500; color: var(--berp-n-700);
 }
+/*
+ * Measured on Frappe v16, not assumed: nothing in any loaded sheet sets `height`
+ * on .form-control by that selector, yet the control computes 28px with padding
+ * 6px 8px 6px 38px. The winning rule reaches the input by a different selector
+ * and outranks 0,4,0 — a four-class override was tested live and still lost.
+ *
+ * !important here is deliberate and bounded: every rule in this file is scoped
+ * under .berp-auth, a class only berp_branding's login template introduces, so
+ * it cannot reach the Desk, the portal or a tenant page. The alternative is a
+ * selector arms race against a vendor theme we do not control.
+ */
 .berp-auth .form-control {
-	height: 44px;                      /* A11Y touch-target floor */
+	height: 44px !important;           /* A11Y touch-target floor */
 	box-sizing: border-box;
-	padding: 0 14px;
+	/* Frappe's field icons are kept rather than hidden — fewer overrides, and
+	   nothing in CI-001 argues against them. Padding clears icon and toggle. */
+	padding: 0 42px 0 42px !important;
 	border: 1px solid var(--berp-n-200);
 	border-radius: var(--berp-radius-control);
 	background: var(--berp-n-0);
@@ -161,15 +174,10 @@
 }
 .berp-auth .email-field,
 .berp-auth .password-field { position: relative; }
-.berp-auth .email-field .form-control,
-.berp-auth .password-field .form-control { padding-right: 42px; }
 .berp-auth .field-icon,
-.berp-auth .toggle-password {
-	position: absolute; top: 50%; transform: translateY(-50%);
-	right: 14px; color: var(--berp-n-400);
-}
-.berp-auth .email-field .field-icon,
-.berp-auth .password-field .field-icon { right: auto; left: -9999px; }  /* icon left of text is not in the spec layout */
+.berp-auth .toggle-password { color: var(--berp-n-400); }
+.berp-auth .toggle-password { cursor: pointer; }
+.berp-auth .toggle-password:hover { color: var(--berp-n-700); }
 .berp-auth .field-error {
 	margin: 6px 0 0; font-size: 13px; line-height: 20px; color: var(--berp-danger);
 }
@@ -204,23 +212,30 @@
 .berp-auth .sign-up-message a:hover { color: var(--berp-teal-800); text-decoration: underline; }
 
 .berp-auth .page-card-actions { margin-top: 24px; }
-.berp-auth .btn-login,
-.berp-auth .page-card-actions .btn-primary {
+/*
+ * Frappe's rule is `.for-login .page-card .page-card-actions .btn-login`, i.e.
+ * 0,4,0. A 0,2,0 override never applied — the button stayed #171717. Matching
+ * their depth and loading after them is enough; no !important needed. Verified
+ * live before writing this.
+ */
+.berp-auth .page-card .page-card-actions .btn-login,
+.berp-auth .page-card .page-card-actions .btn-primary {
 	height: 44px; width: 100%;
 	border: none; border-radius: var(--berp-radius-control);
-	background: var(--berp-teal-700);                 /* CI-001 §20 primary */
+	background-color: var(--berp-teal-700);           /* CI-001 §20 primary */
 	font-family: inherit; font-size: 14px; font-weight: 600;
 	color: var(--berp-n-0);
 	box-shadow: none;
 }
-.berp-auth .btn-login:hover,
-.berp-auth .page-card-actions .btn-primary:hover { background: var(--berp-teal-800); color: var(--berp-n-0); }
+.berp-auth .page-card .page-card-actions .btn-login:hover,
+.berp-auth .page-card .page-card-actions .btn-primary:hover { background-color: var(--berp-teal-800); color: var(--berp-n-0); }
 .berp-auth .btn-login:focus-visible,
 .berp-auth .btn-login-option:focus-visible,
 .berp-auth a:focus-visible {
 	outline: 2px solid var(--berp-teal-600);
 	outline-offset: 2px;
 }
+.berp-auth .page-card .page-card-actions .btn-login-option,
 .berp-auth .btn-login-option {
 	height: 44px; width: 100%;
 	margin-top: 12px;
