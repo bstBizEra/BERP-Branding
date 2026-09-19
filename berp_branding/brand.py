@@ -347,19 +347,32 @@ def _brand_boot_app_data(bootinfo) -> None:
 	are precisely the upstream identity this app exists to displace.
 	"""
 	logo = branding().get("app_logo")
-	if not logo:
-		return
 
 	for app in bootinfo.get("app_data") or []:
-		current = app.get("app_logo_url")
-		if isinstance(current, list | tuple):
-			# Unconfigured: boot.py handed back the hook list rather than a URL.
-			current = current[0] if current else None
-		if not current or current in UPSTREAM_LOGOS:
-			app["app_logo_url"] = logo
-		else:
-			# Normalise, so a list never reaches the client even when kept.
-			app["app_logo_url"] = current
+		if logo:
+			current = app.get("app_logo_url")
+			if isinstance(current, list | tuple):
+				# Unconfigured: boot.py handed back the hook list rather than a URL.
+				current = current[0] if current else None
+			if not current or current in UPSTREAM_LOGOS:
+				app["app_logo_url"] = logo
+			else:
+				# Normalise, so a list never reaches the client even when kept.
+				app["app_logo_url"] = current
+
+		# boot.py assembles app_title from the `add_to_apps_screen` hook or the
+		# `app_title` hook and passes it through NO translation, so the Desk
+		# sidebar subtitle and the apps screen render the raw upstream name —
+		# "ERPNext", "Frappe Framework" — however the site's language is set.
+		#
+		# Running it through _() here is deliberately the whole fix: it keeps the
+		# app's translation CSVs as the single source of truth for brand strings
+		# and simply applies the translation upstream omitted, rather than
+		# hardcoding a second copy of the mapping in Python. A site that adds a
+		# language adds a CSV; nothing here changes.
+		title = app.get("app_title")
+		if isinstance(title, str) and title:
+			app["app_title"] = _(title)
 
 
 # ─── Operator helper ──────────────────────────────────────────────────────────
