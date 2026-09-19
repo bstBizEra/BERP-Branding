@@ -90,7 +90,8 @@
 	max-width: 360px;
 	font-size: 14px;
 	line-height: 22px;
-	/* 0.78 white on the teal field is ~9:1 — comfortably above AA. */
+	/* Measured on the rendered page, not estimated: 0.78 white over the teal
+	   field is 6.4:1, above the 4.5:1 AA floor for text this size. */
 	color: rgba(255, 255, 255, 0.78);
 }
 
