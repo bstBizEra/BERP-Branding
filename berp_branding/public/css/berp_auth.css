@@ -41,9 +41,12 @@
 }
 
 /* ── Brand panel ──────────────────────────────────────────────────────────
- * The mark sits on a white plate because the kit ships no logo.inverse
- * (WL-001 §17, open). With an inverse asset, drop .berp-auth__plate and place
- * the mark directly on the field.
+ * The mark sits directly on the teal field, using berp-logo-inverse.svg.
+ *
+ * It used to sit on a white plate, because the kit shipped no logo.inverse and
+ * the teal mark is unreadable on teal. That gap closed on 2026-09-19: the kit
+ * gained IconBgGreen, whose light mark minus its background plate IS the
+ * inverse. Measured luminance 0.635-0.990, so no plate is needed.
  */
 .berp-auth__brand {
 	position: relative;
@@ -60,17 +63,14 @@
 	right: -180px;
 	bottom: -150px;
 	width: 560px;
-	opacity: 0.09;
+	/* The light mark on the teal field reads as a highlight. The teal mark at
+	   the same opacity was teal-on-teal and effectively invisible. */
+	opacity: 0.07;
 	pointer-events: none;
 }
 .berp-auth__lockup { position: relative; display: flex; align-items: center; gap: 14px; }
-.berp-auth__plate {
-	width: 52px; height: 52px; flex-shrink: 0;
-	border-radius: var(--berp-radius-card);
-	background: var(--berp-n-0);
-	display: flex; align-items: center; justify-content: center;
-}
-.berp-auth__plate img { width: 26px; height: 32px; }
+/* CI-001 §3: symbol recommended 32px, absolute minimum 24px. 38px here. */
+.berp-auth__mark { width: 31px; height: 38px; flex-shrink: 0; }
 .berp-auth__wordmark {
 	font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: var(--berp-n-0);
 }
@@ -265,6 +265,7 @@
 @media (max-width: 900px) {
 	.berp-auth { grid-template-columns: minmax(0, 1fr); }
 	.berp-auth__brand { padding: 28px 24px; min-height: 208px; }
+	.berp-auth__mark { width: 26px; height: 32px; }
 	.berp-auth__line { font-size: 30px; line-height: 38px; }
 	.berp-auth__watermark { right: -70px; bottom: -80px; width: 260px; }
 	.berp-auth__rule { margin-top: 20px; }

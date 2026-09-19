@@ -682,11 +682,41 @@ REQUIRED_ASSETS = ("logo.primary", "logo.compact", "logo.inverse", "favicon", "a
 
 #: Which source file, if any, satisfies each required asset.
 ASSET_SOURCES = {
-	"logo.primary": ("bERP_Logo_hText.svg",),
+	# The kit gained the inverse, mono and tile variants on 2026-09-19, which is
+	# what finally satisfies the WL-001 §17 set. logo.inverse is not shipped by
+	# the kit directly: it is IconBgGreen with its background plate removed.
+	"logo.primary": ("bERP_Logo_hTextOL.svg", "bERP_Logo_hText.svg"),
 	"logo.compact": ("bERP_Logo_Icon.svg",),
-	"logo.inverse": ("bERP_Logo_Inverse.svg", "bERP_Logo_hText_Inverse.svg"),
-	"favicon": ("favicon.ico", "favicon.svg", "favicon.png"),
-	"app-icon": ("app-icon.png", "bERP_Logo_Icon_512.png"),
+	"logo.inverse": ("bERP_Logo_IconBgGreen.svg", "bERP_Logo_Inverse.svg"),
+	"favicon": ("favicon.ico", "favicon.svg", "favicon.png", "bERP_Logo_IconBgWh.svg"),
+	"app-icon": ("app-icon.png", "bERP_Logo_IconBgWh.svg"),
+}
+
+#: BERP-CI-001 §6/§7. Any brand colour outside this set is either a palette
+#: extension nobody wrote down, or a mistake in the artwork.
+CI_PALETTE = {
+	"#17997F",
+	"#148770",
+	"#117461",
+	"#0F6251",
+	"#0C5042",
+	"#093D33",
+	"#51B29F",
+	"#76CABB",
+	"#8BCCBF",
+	"#B5DED6",
+	"#DAEFEB",
+	"#ECF7F5",
+	"#FFFFFF",
+	"#F7F7F8",
+	"#ECEDEE",
+	"#D8D9DA",
+	"#BABCBE",
+	"#8B8D90",
+	"#595A5C",
+	"#414142",
+	"#2F3031",
+	"#1F2021",
 }
 
 UNSAFE_SVG = (
@@ -876,6 +906,37 @@ def check_svg_references(assets_root: Path | None, app_root: Path, package: str 
 	)
 
 
+def check_palette(assets_root: Path | None) -> None:
+	"""
+	Every colour in the brand artwork should be one CI-001 documents.
+
+	This is governance, not pedantry: a colour that appears in artwork but not in
+	the palette means the two disagree, and whichever a developer picks will be
+	wrong somewhere. Greys used only for outlined tagline text are ignored — those
+	come from the type, not the brand ramp.
+	"""
+	if assets_root is None or not assets_root.is_dir():
+		record(SKIP, "D8", "Artwork uses only CI-001 palette colours", "pass --assets")
+		return
+
+	offenders: dict[str, set[str]] = {}
+	for svg in sorted(assets_root.rglob("*.svg")):
+		text = svg.read_text(encoding="utf-8", errors="replace")
+		found = {c.upper() for c in re.findall(r"(?:fill|stop-color)\s*[:=]\s*\"?(#[0-9a-fA-F]{6})", text)}
+		stray = found - CI_PALETTE
+		if stray:
+			offenders[svg.name] = stray
+	record(
+		WARN if offenders else PASS,
+		"D8",
+		"Artwork uses only CI-001 palette colours",
+		"; ".join(f"{n}: {', '.join(sorted(c))}" for n, c in offenders.items())
+		+ " — not in the CI-001 ramp; extend the palette or correct the artwork"
+		if offenders
+		else "all colours are documented",
+	)
+
+
 # ─── Reporting ────────────────────────────────────────────────────────────────
 
 GLYPH = {PASS: "PASS", FAIL: "FAIL", WARN: "WARN", SKIP: "SKIP"}
@@ -927,6 +988,7 @@ def main() -> int:
 	if package and package_dir:
 		check_declared_assets(app_root, package, hooks)
 	check_svg_references(args.assets.resolve() if args.assets else None, app_root, package)
+	check_palette(args.assets.resolve() if args.assets else None)
 
 	return report(args.quiet)
 
