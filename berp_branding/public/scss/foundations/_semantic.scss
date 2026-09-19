@@ -1,0 +1,98 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// bERP semantic tokens — light and dark, as SEPARATE maps.
+//
+// Naming follows DS-001 §3's CSS example (--berp-text-primary, --berp-surface-
+// page, --berp-action-primary, --berp-border-default), extended consistently.
+//
+// WHY TWO SEPARATE BLOCKS AND NOT ONE WITH OVERRIDES
+// DS-001A §D6 records the ruling that both themes ship in v1, against DS-001
+// §33's own recommendation that dark stay RESERVED. The de-scope route in that
+// ruling is only available if the dark map can be DELETED without touching the
+// light map. Hence two self-contained blocks. Do not interleave them.
+//
+// WHY DARK IS DERIVED, NOT INVERTED
+// Every pair below was computed with scripts/contrast.py against WCAG 2.2, not
+// chosen by eye. The decisive case: --berp-text-link at teal.700 measures
+// 2.87:1 on neutral.900 and FAILS. Inverting the light map would have shipped
+// that. Dark uses teal.300 (8.93:1). The numbers are in docs/BERP-DS-001A.md
+// Part II; regenerate them with `python scripts/contrast.py`.
+//
+// AA floor: 4.5:1 normal text, 3:1 large text and non-text.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── LIGHT ────────────────────────────────────────────────────────────────────
+// DS-001 §8 semantic mapping, verbatim.
+:root,
+[data-theme="light"] {
+	// text            measured on surface.default / page / subtle
+	--berp-text-primary: var(--berp-neutral-900);     // 16.32 / 15.24 / 13.92
+	--berp-text-secondary: var(--berp-neutral-500);   //  6.90 /  6.45 /  5.89
+	--berp-text-disabled: var(--berp-neutral-400);    //  3.33 /  3.11 /  2.84 — see note
+	--berp-text-inverse: var(--berp-neutral-0);
+	--berp-text-link: var(--berp-teal-700);           //  5.68 /  5.31 /  4.85
+
+	// surfaces
+	--berp-surface-page: var(--berp-neutral-50);
+	--berp-surface-default: var(--berp-neutral-0);
+	--berp-surface-subtle: var(--berp-neutral-100);
+	--berp-surface-inverse: var(--berp-neutral-900);
+
+	// action — DS-001 §7 canonical aliases
+	--berp-action-primary: var(--berp-teal-700);      // white on it: 5.68:1
+	--berp-action-hover: var(--berp-teal-800);        // white on it: 7.28:1
+	--berp-action-active: var(--berp-teal-900);
+	--berp-action-text: var(--berp-neutral-0);
+	--berp-action-subtle: var(--berp-teal-50);
+	--berp-action-subtle-text: var(--berp-teal-900);
+
+	// selection — CI-001 §19 left-nav selected item
+	--berp-selection-surface: var(--berp-teal-50);
+	--berp-selection-border: var(--berp-teal-300);
+	--berp-selection-text: var(--berp-teal-900);
+
+	// borders — DS-001 §17
+	--berp-border-default: var(--berp-neutral-200);
+	--berp-border-strong: var(--berp-neutral-300);
+	--berp-border-error: var(--berp-error);
+
+	// focus — DS-001 §17. Never removed, only replaced (A11Y-I03).
+	--berp-focus-color: var(--berp-teal-700);
+}
+
+// ── DARK ─────────────────────────────────────────────────────────────────────
+// Derived. Delete this whole block to de-scope to light-only (§D6).
+[data-theme="dark"] {
+	--berp-text-primary: var(--berp-neutral-0);       // 16.32 / 13.22 / 10.20
+	--berp-text-secondary: var(--berp-neutral-300);   //  8.57 /  6.94 /  5.35
+	--berp-text-disabled: var(--berp-neutral-400);    //  4.90 /  3.97 /  3.06
+	--berp-text-inverse: var(--berp-neutral-900);
+	// teal.700 measures 2.87:1 here and fails. teal.300 is 8.93:1.
+	--berp-text-link: var(--berp-teal-300);
+
+	--berp-surface-page: var(--berp-neutral-900);
+	--berp-surface-default: var(--berp-neutral-800);
+	--berp-surface-subtle: var(--berp-neutral-700);
+	--berp-surface-inverse: var(--berp-neutral-0);
+
+	// The button carries its own background, so the pair that matters is white
+	// on teal, which is theme-independent: 5.68:1. teal.600 was rejected — white
+	// on it is 4.44:1, marginally under the 4.5 floor.
+	--berp-action-primary: var(--berp-teal-700);
+	--berp-action-hover: var(--berp-teal-600);
+	--berp-action-active: var(--berp-teal-500);
+	--berp-action-text: var(--berp-neutral-0);
+	--berp-action-subtle: var(--berp-teal-950);
+	--berp-action-subtle-text: var(--berp-teal-200);
+
+	--berp-selection-surface: var(--berp-teal-950);
+	--berp-selection-border: var(--berp-teal-700);
+	--berp-selection-text: var(--berp-teal-200);
+
+	--berp-border-default: var(--berp-neutral-700);
+	--berp-border-strong: var(--berp-neutral-500);
+	--berp-border-error: var(--berp-error);
+
+	// Lightened for the dark field: teal.700 as a ring on neutral.900 is 2.87:1
+	// and would be an invisible focus indicator.
+	--berp-focus-color: var(--berp-teal-400);
+}

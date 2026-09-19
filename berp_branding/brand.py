@@ -25,11 +25,20 @@ and login logo through `get_app_logo()`:
 
     Website Settings.app_logo  ->  Navbar Settings.app_logo  ->  hooks app_logo_url
 
-and the hook branch takes `logos[0]` unless exactly two apps declare it — with
-frappe, erpnext and this app installed there are three, so `logos[0]` is Frappe's
-own logo and the hook never wins. The login page reads
-`Website Settings.app_name` the same way. So the only dependable place to put
-tenant branding is **Website Settings**, which is what `apply_branding` writes.
+and the hook branch takes `logos[0]` unless exactly two apps declare it. Measured
+on Frappe v16 2026-09-19: with frappe and erpnext declaring it and this app
+declaring nothing, the list is two long and the fallback resolves to ERPNext's
+logo; declaring it here would make the list three and send the fallback to
+Frappe's. Either way the hook is not ours to win. The login page reads
+`Website Settings.app_name` the same way. So the dependable place to put tenant
+branding is **Website Settings**, which is what `apply_branding` writes.
+
+One surface does not read Website Settings at all. `desk/page/desktop/desktop.py`
+resolves its logo as Navbar Settings.app_logo, else
+`get_hooks("app_logo_url", app_name="frappe")[0]` — Frappe's own, unconditionally.
+So the legacy /desk page renders the Frappe logo however well Website Settings is
+configured. `apply_branding` therefore writes Navbar Settings too. See
+NAVBAR_LOGO_FIELD below.
 """
 
 from html import escape
@@ -78,6 +87,15 @@ PLATFORM_DEFAULTS = {
 #: uses for the Desk loading screen. Corrected here, with `berp_brand_banner`
 #: added for the portal banner it used to mean. Safe to change: no tenant has
 #: these keys set, they are still proposed values in the README.
+#: Navbar Settings.app_logo is written as a MIRROR of the resolved app_logo.
+#:
+#: Not because get_app_logo() needs it — that already prefers Website Settings —
+#: but because desk/page/desktop/desktop.py reads Navbar Settings and nothing
+#: else before falling back to Frappe's own hook. Measured on the dev bench:
+#: Navbar Settings.app_logo was None, so that page rendered the Frappe logo while
+#: every other surface showed bERP. Mirroring closes the last surface.
+NAVBAR_LOGO_FIELD = "app_logo"
+
 BRAND_FIELDS = {
 	"berp_brand_name": "app_name",
 	"berp_brand_logo": "app_logo",
@@ -210,7 +228,44 @@ def apply_branding(force: int = 0) -> dict:
 		frappe.clear_cache()
 		frappe.logger("berp_branding").info(f"berp_branding: applied branding {changed}")
 
+	navbar_changed = _apply_navbar_logo(wanted.get("app_logo"), force=force)
+	if navbar_changed:
+		changed["navbar_settings.app_logo"] = navbar_changed
+
 	return {"applied": changed, "configured": wanted, "site": frappe.local.site}
+
+
+def _apply_navbar_logo(logo: str | None, force: int = 0) -> str | None:
+	"""
+	Mirror the resolved logo into Navbar Settings.
+
+	The legacy /desk page reads this field and nothing else, so leaving it unset
+	means that one page keeps the Frappe logo. Same force semantics as the
+	Website Settings write: an operator's existing value is preserved unless
+	forced, and nothing is ever blanked.
+
+	Failure here must not fail the whole apply: Website Settings is the surface
+	that matters, and this is a secondary mirror.
+	"""
+	if not logo:
+		return None
+	try:
+		current = frappe.db.get_single_value("Navbar Settings", NAVBAR_LOGO_FIELD)
+		if current and not cint(force):
+			return None
+		if current == logo:
+			return None
+		navbar = frappe.get_single("Navbar Settings")
+		navbar.set(NAVBAR_LOGO_FIELD, logo)
+		navbar.flags.ignore_permissions = True
+		navbar.save()
+		frappe.clear_cache()
+		return logo
+	except Exception as exc:  # pragma: no cover - defensive
+		frappe.logger("berp_branding").warning(
+			f"berp_branding: could not mirror logo into Navbar Settings: {exc}"
+		)
+		return None
 
 
 def after_install():

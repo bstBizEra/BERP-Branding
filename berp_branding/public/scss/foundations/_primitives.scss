@@ -1,0 +1,74 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// bERP primitives — BERP-CI-001 v1.0, locked.
+//
+// THIS IS THE ONLY FILE IN berp_branding WHERE A RAW COLOUR VALUE MAY APPEAR.
+// DS-001 §39 forbids raw values in governed component code; every other file
+// references these tokens. Preflight check E7 enforces it.
+//
+// Primitives are ABSOLUTE: they do not change between light and dark. A theme
+// changes which primitive a *semantic* token points at (_semantic.scss), never
+// the primitive's value. That is what makes the dark map a derivation rather
+// than an inversion.
+//
+// Source of truth: CI-001 §6 (brand lock), §7 (teal scale... see note), §8
+// (neutrals) and DS-001 §§6-9. Where the two agree the value is uncontroversial;
+// they were cross-checked line by line on 2026-09-19.
+// ─────────────────────────────────────────────────────────────────────────────
+
+:root {
+	// ── CI-001 §2 / DS-001 §6 — locked brand identity primitives ───────────
+	// Identity values, NOT automatic component colours. CI-001 is explicit that
+	// the logo teal is the corporate identity while Teal 700 is the accessible
+	// action value. Measured against white: mint 1.92:1, teal 3.56:1 — neither
+	// is usable for normal body text, which is why neither is an action token.
+	--berp-brand-mint: #76CABB;
+	--berp-brand-teal: #17997F;
+	--berp-brand-slate: #595A5C;
+	--berp-brand-charcoal: #414142;
+	--berp-brand-white: #FFFFFF;
+
+	// ── CI-001 §6 / DS-001 §7 — primary teal scale ─────────────────────────
+	--berp-teal-50: #ECF7F5;
+	--berp-teal-100: #DAEFEB;
+	--berp-teal-200: #B5DED6;
+	--berp-teal-300: #8BCCBF;
+	--berp-teal-400: #51B29F;
+	--berp-teal-500: #17997F; // official brand teal
+	--berp-teal-600: #148770;
+	--berp-teal-700: #117461; // primary actionable teal
+	--berp-teal-800: #0F6251;
+	--berp-teal-900: #0C5042;
+	--berp-teal-950: #093D33;
+
+	// ── CI-001 §7 / DS-001 §8 — neutral architecture ───────────────────────
+	// NOTE, open: the ramp jumps 500 -> 700. There is no neutral.600 in either
+	// controlled document. Nothing here invents one; where a dark surface wants
+	// an intermediate step it uses 700. Flagged to CI-001 for ratification.
+	--berp-neutral-0: #FFFFFF;
+	--berp-neutral-50: #F7F7F8;
+	--berp-neutral-100: #ECEDEE;
+	--berp-neutral-200: #D8D9DA;
+	--berp-neutral-300: #BABCBE;
+	--berp-neutral-400: #8B8D90;
+	--berp-neutral-500: #595A5C;
+	--berp-neutral-700: #414142;
+	--berp-neutral-800: #2F3031;
+	--berp-neutral-900: #1F2021;
+
+	// ── DS-001 §9 — semantic state primitives ──────────────────────────────
+	// System-owned. DS-001 §9 is explicit that a tenant may restyle its brand
+	// accent but NOT these: error is not a tenant red. The white-label layer
+	// must never map over them.
+	--berp-success: #18794E;
+	--berp-success-surface: #ECFDF3;
+	--berp-info: #1D5FBF;
+	--berp-info-surface: #EFF6FF;
+	--berp-warning: #A15C00;
+	--berp-warning-surface: #FFF7E8;
+	--berp-error: #B42318;
+	--berp-error-surface: #FEF3F2;
+	--berp-ai: #6B4EFF;
+	--berp-ai-surface: #F4F1FF;
+	--berp-state-neutral: #595A5C;
+	--berp-state-neutral-surface: #F7F7F8;
+}

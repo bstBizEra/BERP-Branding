@@ -1,0 +1,16 @@
+// bERP foundations — the single token source (DS-001 §34/§35).
+//
+// Import this and nothing else. Any file that needs a bERP value imports
+// "foundations/tokens" and references --berp-*; no file outside
+// foundations/_primitives.scss may contain a raw colour value (DS-001 §39,
+// preflight E7).
+//
+//   Token source (CI-001 / DS-001)
+//        -> foundations/_primitives.scss    absolute values, both themes
+//        -> foundations/_semantic.scss      light map | dark map
+//        -> foundations/_dimensions.scss    density, radius, space, type
+//        -> consumers (berp_desk, berp_auth)
+
+@import "primitives";
+@import "semantic";
+@import "dimensions";
