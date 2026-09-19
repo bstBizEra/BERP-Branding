@@ -57,6 +57,14 @@ required_apps = ["frappe/erpnext"]
 # position is what lets the theme win at equal specificity with no !important.
 app_include_css = "berp_desk.bundle.css"
 
+# The <meta name="theme-color"> tags in frappe/www/desk.html are hardcoded to
+# Frappe blue and no stylesheet can reach a <meta>. desk.html also carries zero
+# {% block %} tags, so a Tier 3 template extension has nothing to override and
+# copying it would be the vendoring §B4 prohibits. This bundle is the lowest
+# remaining instrument; it hardcodes no colour, reading the value back from the
+# token layer instead. See public/js/berp_brand.bundle.js.
+app_include_js = "berp_brand.bundle.js"
+
 # ─── Portal and Desk context ──────────────────────────────────────────────────
 update_website_context = "berp_branding.brand.update_website_context"
 boot_session = "berp_branding.brand.boot_session"
