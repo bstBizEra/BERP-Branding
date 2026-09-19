@@ -1,0 +1,42 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// bERP Desk components — Tier 2 (scoped selector override).
+// BERP-DS-001A §B2, Stage 3. Imported by berp_desk.bundle.scss.
+//
+// Tier 1 changes tokens. This file changes the things no token can reach: the
+// measured literal tail of DS-001A §A5. Every rule here states which surface it
+// targets and why a token could not do the job.
+//
+// Rules for this file (§B2):
+//   - measure the competing specificity before writing; match depth, don't escalate
+//   - no !important without a live test showing a four-class override lost
+//   - every rule scoped or inventoried, so an upstream class rename is findable
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── Module icons ────────────────────────────────────────────────────────────
+// ERPNext's desktop icons carry a solid #0289F7 plate inside the artwork, which
+// is the most visually dominant thing on the Desk and reads as a competing
+// brand accent in a teal product. See --berp-icon-brand-filter for the
+// measurement behind the value.
+//
+// The selector keys on the SRC PATH rather than a class, deliberately:
+//   - it cannot touch berp_branding's own marks, which are already correct and
+//     would be wrecked by a hue rotation
+//   - it survives an upstream class rename, because the asset path is the
+//     contract, not the styling hook
+//   - it scopes to ERPNext's set alone, leaving Frappe's neutral greys as they
+//     are (and avoiding the #06B58B -> #43AC3E contrast regression)
+//
+// Specificity 0,1,1. Nothing upstream sets `filter` on these, so no escalation
+// and no !important is needed.
+img[src*="/erpnext/icons/desktop_icons/"] {
+	filter: var(--berp-icon-brand-filter);
+}
+
+// A filter is a paint-time effect. Anything that depends on the icon's real
+// colours — a print stylesheet, a high-contrast mode — should opt out here
+// rather than have the filter silently follow it.
+@media print {
+	img[src*="/erpnext/icons/desktop_icons/"] {
+		filter: none;
+	}
+}

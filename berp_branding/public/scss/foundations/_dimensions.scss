@@ -86,6 +86,29 @@
 	--berp-focus-width: 2px;
 	--berp-focus-offset: 2px;
 
+	// ── Icon brand filter (Tier 2, Stage 3) ───────────────────────────────
+	// ERPNext ships its desktop icons as a solid #0289F7 plate with a white
+	// glyph. The colour is inside the artwork, so no token reaches it, and
+	// forking 64 SVGs would be vendoring a modified upstream asset — which
+	// DS-001A §B4 prohibits outright. A filter reaches all of them, and any
+	// icon upstream adds later is themed automatically.
+	//
+	// SOLVED BY MEASUREMENT, not chosen by eye. Each candidate was rendered to
+	// a canvas and the plate pixel sampled; this chain minimises RGB distance
+	// to CI-001 Teal 500 while leaving the glyph untouched:
+	//
+	//   #0289F7 plate  ->  #1AA07F   (Teal 500 is #17997F; distance 7.6/441)
+	//   #FFFFFF glyph  ->  #FFFFFF   (drift 0 — hue-rotate cannot move white)
+	//   white on the result: 3.29:1, above the 3:1 WCAG 1.4.11 non-text floor.
+	//
+	// Applied ONLY to ERPNext's set. Frappe's greys are already neutral, and
+	// its #06B58B lands on #43AC3E at 2.91:1 under this chain — below the
+	// non-text floor. Filtering everything would have shipped that regression.
+	//
+	// This is a stopgap that removes a competing brand blue. The real answer is
+	// a bERP icon set, which is a designer deliverable.
+	--berp-icon-brand-filter: hue-rotate(-46deg) saturate(80%) brightness(101%);
+
 	// ── DS-001 §19 motion. Honour prefers-reduced-motion at the use site. ──
 	--berp-motion-instant: 50ms;
 	--berp-motion-fast: 120ms;

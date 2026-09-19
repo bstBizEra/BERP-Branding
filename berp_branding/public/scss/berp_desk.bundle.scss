@@ -24,7 +24,9 @@
 //         and Frappe inverts its gray ramp in dark; overwriting them would
 //         recolour states that must stay neutral. Preflight E4 enforces this.
 //   MAY NOT contain a raw colour value (DS-001 §39). Preflight E7 enforces it.
-//   MAY NOT contain a selector override. Those are Tier 2 / Stage 3.
+//   MAY NOT contain a selector override in THIS file. Tier 2 rules live in
+//         _components.scss, imported at the end, so the two tiers stay separable
+//         and reviewable apart.
 //
 // Because bERP primitives are ABSOLUTE and Frappe's are inverted per theme,
 // pointing a Frappe semantic at a --berp-* token is theme-safe by construction.
@@ -168,3 +170,8 @@
 	--border-radius-lg: var(--berp-radius-card);
 	--border-radius-xl: var(--berp-radius-modal);
 }
+
+// ── Tier 2 (Stage 3) ─────────────────────────────────────────────────────────
+// Kept in its own file so the token layer above can be read, reviewed and
+// reverted independently of the selector overrides.
+@import "components";
