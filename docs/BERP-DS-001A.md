@@ -427,8 +427,24 @@ The Lao face is the open item. Per the established Lao PDF font contract, server
 rendering requires **static faces installed in the server font environment**, never
 `@font-face`. Screen rendering is the opposite: the Desk needs a web font. These
 are two different deliverables for the same typeface and must not be conflated —
-the previous session's font work covered the server side only, and the Desk still
-has no Lao web face. Noto Sans Lao is the CI-001 choice.
+the previous session's font work covered the server side only.
+
+**Correction:** an earlier draft of this section said "Noto Sans Lao is the CI-001
+choice". It is not — CI-001 §10 reads `Latin → Inter`, `Lao → approved bERP Lao UI
+family`, `Fallback → Noto Sans Lao`, and AGENTS.md §3.6 names that approved family
+as **Phetsarath OT**. Noto Sans Lao is the fallback, and it has a real job there:
+DS-001 §32 requires the Lao corpus to include Pali/Sanskrit extensions "covered by
+approved fallback".
+
+**Resolved in Stage 2 (2026-09-20).** Both faces now ship self-hosted from
+`berp_branding/public/fonts/`, ~50KB total, against ADR-003's "Google Fonts CDN" —
+see `foundations/_fonts.scss` for the argument, which turns on a CDN making a
+rendering guarantee conditional on the network for the exact failure mode this
+project already ruled unacceptable in print. ADR-003 needs amending or this
+reverting; it should not stay ambiguous. Verified on the bench: all three faces
+`loaded`, and one Lao string measures three distinct widths — Phetsarath 497.59,
+Noto Sans Lao 485.44, nonexistent family 505.3. Distinct widths are what rule out
+silent substitution.
 
 ---
 
@@ -1140,13 +1156,23 @@ moves sticky offsets and belongs with the structural work in Stage 4.
 
 Open from this stage:
 
-- `--list-row-height` now resolves to 44px in Comfortable, up from upstream's
-  30px. That is DS-001 §16's table-row contract applied faithfully, and it costs
-  roughly a third of the visible rows in a list view. §16 says "Tables → Compact
-  available"; it does not say Compact is their default. **Recommend making
-  Compact the default for list, report and kanban views** and confirming that
-  reading of §16 — this is the one place where following the spec literally has
-  an operational cost worth a second look.
+- ~~`--list-row-height` now resolves to 44px in Comfortable... costs roughly a
+  third of the visible rows.~~ **RETRACTED 2026-09-20 — the claim was false.**
+  It came from measuring `.list-row-container, .list-row`, whose first match is
+  the HEADER row, and inferring the data rows from it without measuring one.
+  Swept live against an actual data row, `--list-row-height` at 30 / 36 / 44 /
+  60px all produce a 55px row: Frappe's data rows are content-sized and ignore
+  the property, which drives the header and nothing else.
+
+  Compact was still made the default for list, report and kanban routes, and it
+  is still the right reading of §16 — header, toolbar buttons and filter inputs
+  all drop to the Compact contract. But it does **not** put more records on
+  screen, and nothing should describe it as if it does. Densifying data rows is
+  separate work against content and line-height, not a token.
+
+  Recorded here rather than deleted because a ruling was requested on the false
+  premise. The methodological failure is the same one §G5 already names: a
+  measurement that looked like evidence while measuring the wrong element.
 - The rendered Desk head is verified by source and hook resolution but not yet
   by an authenticated page load (G4).
 
