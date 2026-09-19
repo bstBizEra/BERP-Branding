@@ -300,10 +300,66 @@ def boot_session(bootinfo):
 	Expose the brand to Desk JavaScript.
 
 	Frappe fills `bootinfo.app_logo_url` from Website Settings before this runs,
-	so the logo is already correct once `apply_branding` has run. `berp_brand` is
-	added for client code that wants the label without re-deriving it.
+	so that value is already correct once `apply_branding` has run. `berp_brand`
+	is added for client code that wants the label without re-deriving it.
 	"""
 	bootinfo.berp_brand = {"name": brand_name(), "site": frappe.local.site}
+	_brand_boot_app_data(bootinfo)
+
+
+#: Logos that mean "no bERP identity here" and may be replaced.
+UPSTREAM_LOGOS = (
+	"/assets/frappe/images/frappe-framework-logo.svg",
+	"/assets/erpnext/images/erpnext-logo.svg",
+)
+
+
+def _brand_boot_app_data(bootinfo) -> None:
+	"""
+	Put the bERP mark into the Desk chrome.
+
+	`bootinfo.app_logo_url` is NOT what the v16 Desk sidebar renders. Measured on
+	the bench: `sidebar_header.js` falls back to
+
+	    get_default_icon() { return frappe.boot.app_data[0].app_logo_url }
+
+	and `boot.py` builds each `app_data` entry as
+
+	    app_logo_url = <add_to_apps_screen logo>
+	                   or get_hooks("app_logo_url", app_name=<this app>)
+	                   or get_hooks("app_logo_url", app_name="frappe")
+
+	Index 0 is `frappe`, so the Desk rendered the FRAPPE logo while the login
+	page, the browser tab and the splash all showed bERP. A scan of the live Desk
+	found zero images from this app.
+
+	The third branch also returns a **list**, not a string — so any app that
+	declares no `app_logo_url` of its own ends up with `["/assets/frappe/..."]`
+	in a field the JavaScript uses directly as a URL. Both `berp_lao` and this
+	app were in that state.
+
+	Both are corrected here. `boot_session` runs after `boot.py` has assembled
+	`app_data`, so this is a normal published hook doing normal work — no
+	upstream file is touched and nothing depends on hook ordering between apps.
+
+	An app that ships a mark of its own keeps it; only Frappe's and ERPNext's
+	logos and the unconfigured list-valued fallback are replaced, because those
+	are precisely the upstream identity this app exists to displace.
+	"""
+	logo = branding().get("app_logo")
+	if not logo:
+		return
+
+	for app in bootinfo.get("app_data") or []:
+		current = app.get("app_logo_url")
+		if isinstance(current, list | tuple):
+			# Unconfigured: boot.py handed back the hook list rather than a URL.
+			current = current[0] if current else None
+		if not current or current in UPSTREAM_LOGOS:
+			app["app_logo_url"] = logo
+		else:
+			# Normalise, so a list never reaches the client even when kept.
+			app["app_logo_url"] = current
 
 
 # ─── Operator helper ──────────────────────────────────────────────────────────

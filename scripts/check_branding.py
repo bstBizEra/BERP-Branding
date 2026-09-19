@@ -341,6 +341,23 @@ class _Doc:
 		self.saved += 1
 
 
+class _Boot(dict):
+	"""
+	Stands in for the bootinfo object Frappe hands to a `boot_session` hook.
+
+	It must be BOTH a dict and attribute-accessible, because that is what
+	`frappe._dict` is and what `boot.py` itself relies on — the same function
+	does `bootinfo.app_data = []` and `bootinfo["lang"] = ...`. The stub used a
+	plain SimpleNamespace, which has no `.get()`, so correct product code that
+	read `bootinfo.get("app_data")` failed here and nowhere else.
+	"""
+
+	__getattr__ = dict.get
+
+	def __setattr__(self, key, value):
+		self[key] = value
+
+
 class _Logger:
 	def __init__(self):
 		self.messages: list[tuple[str, str]] = []
@@ -684,14 +701,52 @@ def check_branding_logic(app_root: Path, package: str, hooks: dict) -> None:
 			)
 
 		frappe.conf = {"berp_brand_name": "LaoCap ERP"}
-		boot = types.SimpleNamespace()
+		# app_data as boot.py actually leaves it: frappe first, erpnext second,
+		# and apps that declare no app_logo_url holding a LIST rather than a URL.
+		boot = _Boot(
+			app_data=[
+				{"app_name": "frappe", "app_logo_url": "/assets/frappe/images/frappe-framework-logo.svg"},
+				{"app_name": "erpnext", "app_logo_url": "/assets/erpnext/images/erpnext-logo.svg"},
+				{"app_name": "berp_lao", "app_logo_url": ["/assets/frappe/images/frappe-framework-logo.svg"]},
+				{"app_name": "other_app", "app_logo_url": "/assets/other_app/images/their-logo.svg"},
+			]
+		)
 		branding.boot_session(boot)
 		check(
 			"C13",
 			"boot_session exposes the brand to Desk JavaScript",
-			getattr(boot, "berp_brand", {}).get("name") == "LaoCap ERP",
-			f"boot.berp_brand = {getattr(boot, 'berp_brand', None)!r}",
+			(boot.get("berp_brand") or {}).get("name") == "LaoCap ERP",
+			f"boot.berp_brand = {boot.get('berp_brand')!r}",
 			"frappe.boot.berp_brand.name",
+		)
+
+		# C18/C19 guard the Desk sidebar logo. sidebar_header.js renders
+		# frappe.boot.app_data[0].app_logo_url, which Website Settings never
+		# reaches — the Desk showed the Frappe logo while every other surface
+		# showed bERP until boot_session started rewriting this.
+		data = boot.get("app_data") or []
+		logos = [a.get("app_logo_url") for a in data]
+		check(
+			"C18",
+			"boot_session brands app_data[0], which drives the Desk sidebar",
+			bool(logos) and logos[0] == branding.PLATFORM_DEFAULTS["app_logo"],
+			f"app_data[0].app_logo_url = {logos[0] if logos else None!r} — the Desk renders this one",
+			"app_data[0] carries the bERP mark",
+		)
+		check(
+			"C19",
+			"No app_logo_url reaches the client as a list",
+			all(isinstance(v, str) for v in logos),
+			f"non-string logo(s): {[v for v in logos if not isinstance(v, str)]!r}"
+			" — boot.py returns the hook LIST when an app declares none, and the JS uses it as a URL",
+			f"{len(logos)} logo(s), all strings",
+		)
+		check(
+			"C20",
+			"An app that ships its own mark keeps it",
+			logos[-1] == "/assets/other_app/images/their-logo.svg",
+			f"third-party logo was overwritten with {logos[-1]!r}",
+			"only Frappe/ERPNext defaults are displaced",
 		)
 
 	except Exception as exc:
