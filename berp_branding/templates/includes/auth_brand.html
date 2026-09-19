@@ -1,0 +1,19 @@
+{# bERP auth brand panel — BERP-WL-001 §20. Included by every auth template so
+   the lockup and statement exist in exactly one place. aria-hidden because it
+   is decorative: the accessible name comes from the form, and an auth surface
+   is an auth surface first (BERP-A11Y-001 §43). #}
+<aside class="berp-auth__brand" aria-hidden="true">
+	<img class="berp-auth__watermark" src="/assets/berp_branding/images/berp-logo.svg" alt="">
+	<div class="berp-auth__lockup">
+		<span class="berp-auth__plate">
+			<img src="/assets/berp_branding/images/berp-logo.svg" alt="">
+		</span>
+		<span class="berp-auth__wordmark">bERP</span>
+	</div>
+	<div class="berp-auth__statement">
+		<span class="berp-auth__line">{{ _("People") }}</span>
+		<span class="berp-auth__line">{{ _("Platforms") }}</span>
+		<span class="berp-auth__line berp-auth__line--accent">{{ _("Possibilities") }}</span>
+		<span class="berp-auth__rule"></span>
+	</div>
+</aside>

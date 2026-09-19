@@ -219,6 +219,7 @@
  * live before writing this.
  */
 .berp-auth .page-card .page-card-actions .btn-login,
+.berp-auth .page-card .page-card-actions .btn-signup,
 .berp-auth .page-card .page-card-actions .btn-primary {
 	height: 44px; width: 100%;
 	border: none; border-radius: var(--berp-radius-control);
@@ -228,6 +229,7 @@
 	box-shadow: none;
 }
 .berp-auth .page-card .page-card-actions .btn-login:hover,
+.berp-auth .page-card .page-card-actions .btn-signup:hover,
 .berp-auth .page-card .page-card-actions .btn-primary:hover { background-color: var(--berp-teal-800); color: var(--berp-n-0); }
 .berp-auth .btn-login:focus-visible,
 .berp-auth .btn-login-option:focus-visible,

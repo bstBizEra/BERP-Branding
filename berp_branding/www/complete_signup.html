@@ -1,0 +1,19 @@
+{# The last unbranded auth surface. Same pattern as login.html. #}
+{% extends "frappe/www/complete_signup.html" %}
+
+{% block head_include %}
+{{ super() }}
+<link rel="stylesheet" href="/assets/berp_branding/css/berp_auth.css">
+{% endblock %}
+
+{% block content %}
+<div class="berp-auth">
+	{% include "berp_branding/templates/includes/auth_brand.html" %}
+	<div class="berp-auth__panel">
+		<div class="berp-auth__panel-inner">
+			{{ super() }}
+		</div>
+		<p class="berp-auth__attribution">{{ _("Powered by bERP") }}</p>
+	</div>
+</div>
+{% endblock %}
