@@ -1,6 +1,7 @@
 # BERP-DS-001A — ERPNext Rebranding Surface Inventory & Override Contract
 
-**Version:** 0.2 — Part D ruled by OP-Vily, 2026-09-19. Stage 1 unblocked.
+**Version:** 0.3 — Stage 0 and Stage 1 implemented and verified on the dev bench.
+Part D ruled by OP-Vily, 2026-09-19. §D2 corrected on reading both parents in full.
 **Status:** Controlled unit. Mandated by BERP-DS-001 §"next controlled unit", which
 gates further theme code behind this document.
 **Authority:** Subordinate to BERP-CI-001 (brand primitives) and BERP-DS-001
@@ -154,13 +155,25 @@ The plain-path form is permitted only for the already-shipped `berp_auth.css`,
 which is loaded by an explicit `<link>` in a template we control and can version
 by hand.
 
-**Deployment hazard, container-specific.** On this bench `sites/assets` is each
-container's own overlay, not the shared bind mount. The `frontend` container's
-copy is frozen at image build time and does not contain `berp_branding`. Assets
-served through nginx therefore 404 until they are copied in. A compose change is
-the durable fix; `docker cp` is the current workaround. This is an environment
-defect, not an architectural one, but any Desk theme work will hit it on the
-first deploy.
+**Deployment hazard, container-specific.** Confirmed during the Stage 1 deploy,
+and the mechanism is more specific than first recorded. `/srv/berp/data/dev/sites`
+*is* bind-mounted into the frontend, but `sites/assets` is a **symlink** to
+`frappe-bench/assets`, which is container-local. Proof: the two containers'
+`assets.json` differed in size (3,929 vs 3,745 bytes) while the backend had
+`berp_branding/dist/` and the frontend did not.
+
+Two traps follow, both of which cost a deploy cycle here:
+
+- Under `assets/`, each app directory is *itself* a symlink to
+  `apps/<app>/<app>/public`. `docker cp` copies the **link**, not the target, so
+  the frontend ends up with a dangling symlink and still 404s. Use
+  `tar chf -` (`-h` dereferences) and extract inside the container.
+- The frontend runs as uid 1000 (`frappe`) while `assets/` is root-owned, so the
+  extract needs `docker exec -u root`.
+
+A compose change that shares one assets volume is the durable fix. Until then the
+deploy step is: `tar ch` from the backend's `apps/<app>/<app>/public`, `docker cp`
+the tarball, extract as root over `assets/<app>`, and copy `assets.json` across.
 
 ## A3. The token surface
 
@@ -711,6 +724,33 @@ corrected, not obeyed.
 
 ## D2. Control height — CI-001 §21 vs DS-001 §16
 
+> **CORRECTION (2026-09-19, after the ruling).** The conflict described below is
+> not real, and the ruling was therefore made on a false premise. Reading both
+> parents in full: **CI-001 §21's Compact/Standard/Comfortable are three SIZES OF
+> ONE CONTROL** (32–36 / 40 / 44–48), while **DS-001 §16's Comfortable/Compact are
+> two DENSITY MODES**, each with five contracts. Different axes, overlapping
+> vocabulary. They reconcile exactly:
+>
+> | DS-001 §16 contract | Comfortable | Compact | CI-001 §21 equivalent |
+> |---|---:|---:|---|
+> | Standard control | 40px | 32px | Standard 40 / Compact 32–36 |
+> | Large control | 48px | 40px | Comfortable 44–48 (upper) |
+> | Table row | 44px | 36px | Comfortable 44–48 (lower) |
+> | Navigation item | 40px | 36px | — |
+> | Card internal spacing | 24px | 16px | CI-001 §12 card padding |
+>
+> **DS-001 §16 is adopted verbatim** and governs. The ruling's intent is satisfied
+> — 44px survives as the Comfortable table row, which is where row height
+> actually matters — and no amendment to either parent is needed after all.
+>
+> One consequence: under §16 a form input at Comfortable is **40px**, so the
+> shipped login input at 44px was one step oversized. Corrected to 40px in Stage
+> 0.3, which still clears CI-001 §20's 40×40 interactive-area floor.
+>
+> This was my error, not the documents'. It is left in place below rather than
+> deleted so the ruling can be read against what prompted it.
+
+
 CI-001 §21 puts Comfortable inputs at 44–48px. DS-001 §16 puts the Comfortable
 standard control at 40px. Two authority documents disagree on a primitive that
 propagates through every form in the product. The login shipped at 44px.
@@ -979,6 +1019,139 @@ and the Lao translation file for `berp_branding`.
 
 ---
 
+# Part G — Stage 0 / Stage 1 implementation record
+
+Implemented and verified on `dev.berp.bizera.la`, 2026-09-19. This section
+records what the implementation *proved* about Part A and Part B, and the two
+places where doing the work corrected the inventory.
+
+## G1. The contract's central claim, verified at the selector level
+
+Part B rests on one assertion: that a stylesheet berp_branding declares wins at
+equal specificity because it loads last. Both halves are now measured rather
+than reasoned.
+
+**Load order.** With `app_include_css = "berp_desk.bundle.css"` declared, the
+resolved hook list on the bench is:
+
+```
+['desk.bundle.css', 'report.bundle.css', 'erpnext.bundle.css',
+ 'lao_berp.bundle.css', 'berp_desk.bundle.css']
+```
+
+Ours is fifth of five.
+
+**Specificity.** Every property Stage 1 retargets is declared upstream at
+`:root` or `[data-theme=dark]` — 0,1,0 in both cases, identical to ours:
+
+| Property | Upstream selector | Upstream value |
+|---|---|---|
+| `--primary` | `:root` | `#171717` |
+| `--text-color` | `:root` / `[data-theme=dark]` | `var(--gray-800)` / `var(--gray-50)` |
+| `--text-muted` | `:root` / `[data-theme=dark]` | `var(--gray-700)` / `var(--gray-400)` |
+| `--border-radius` | `:root` | `8px` |
+| `--btn-height` | `:root,[data-theme=light]` | `28px` |
+| `--list-row-height` | `:root,[data-theme=light]` | `30px` |
+| `--navbar-bg` | `:root,[data-theme=light]` | `var(--neutral)` |
+| `--font-stack` | `:root` | `"InterVariable", "Inter", …` |
+
+Equal specificity, later in source order. **Stage 1 contains no `!important` at
+all**, which is the contract working as designed rather than a stylistic
+preference.
+
+One upstream rule deliberately outranks us and should stay that way:
+`[data-theme=dark] .print-format { --text-color: var(--gray-900) }` at 0,2,0.
+Print output wants dark text even in dark mode; our 0,1,0 dark block correctly
+does not reach it.
+
+## G2. Frappe's shape is closer to CI-001 than expected
+
+`--border-radius: 8px`, `--border-radius-lg: 12px`, `--border-radius-xl: 16px`
+upstream — which is CI-001 §13's control / card / modal scale **exactly**. Only
+the two intermediate steps (`sm` 8→6, `md` 10→8) move. The radius layer needed
+almost no work, which was not visible from the source SCSS and only appeared in
+the built bundle.
+
+Frappe also self-hosts and bundles Inter through `desk.bundle.scss`, so the
+Latin half of CI-001 §10 is satisfied with no font shipping and no external
+font host.
+
+## G3. End-to-end verification, in a browser
+
+The whole chain — CI-001 value → primitive → semantic map → compiled bundle →
+browser computed style — was read back from the running page, not inferred:
+
+| | Light | Dark |
+|---|---|---|
+| `--berp-action-primary` | `#117461` | `#117461` |
+| `--berp-text-primary` | `#1F2021` | `#FFFFFF` |
+| `--berp-text-link` | `#117461` | **`#8BCCBF`** |
+| `--berp-surface-default` | `#FFFFFF` | `#2F3031` |
+| `--berp-focus-color` | `#117461` | **`#51B29F`** |
+
+The two bold values are where the dark map **diverges from an inversion**, and
+they are the reason §B1.2 is written the way it is. Teal 700 as link text on
+`neutral.900` measures 2.87:1 and fails AA; teal.300 measures 7.23:1.
+
+Contrast, computed in-page from what actually resolved — all eight pairs pass AA:
+
+| Pair | Light | Dark |
+|---|---:|---:|
+| text.primary on surface.default | 16.32:1 | 13.22:1 |
+| text.secondary on surface.default | 6.90:1 | 6.94:1 |
+| text.link on surface.default | 5.68:1 | 7.23:1 |
+| white on action.primary | 5.68:1 | 5.68:1 |
+
+Density switching resolves exactly to DS-001 §16: setting
+`data-berp-density="compact"` moves `--berp-control-height` 40→32 and
+`--berp-row-height` 44→36.
+
+Rendered auth surface: input computes **40px** (was 44 — see the §D2
+correction), button background `rgb(17, 116, 97)` = Teal 700, radius 8px, font
+stack `Inter, "Noto Sans Lao", …`, and `berp_auth.bundle.OBNPMFCH.css` loads
+last of four sheets with a content hash.
+
+## G4. A harness defect, proven rather than assumed
+
+Adding the Navbar Settings mirror turned preflight checks C11 and C17 red. The
+stub returned **one** `_Doc` for every `get_single()` call, so the Navbar write
+landed on the Website Settings document and two unrelated force-semantics checks
+failed against correct product code.
+
+Modelling the two singles properly turns them green with the product code
+untouched — which is what distinguishes a harness defect from a real one, and is
+REVIEW-METHOD P2 applied to a test double rather than to a diagnostic. Had the
+stub not been fixed, the obvious "fix" was to weaken `apply_branding`'s force
+semantics to satisfy a fabricated failure.
+
+A second instrument note for §C5: `bench console` cannot render a Desk context.
+`www/desk.py:get_context` dies at `get_csrf_token()` (line 35) for want of a
+request object — *before* line 39 assembles `app_include_css`. The empty list it
+returned was the console's, not the product's. Verifying the rendered Desk head
+needs an authenticated HTTP request.
+
+## G5. What Stage 1 did not do
+
+No selector override, no structural change, no `!important`, nothing outside the
+token layer. Stage 3's literal tail (A5) is untouched: `#00b2ff` and the
+Bootstrap state residue still render upstream's colours. The Desk navbar height
+stays at Frappe's 48px rather than CI-001 §19's 56–64px band, because changing it
+moves sticky offsets and belongs with the structural work in Stage 4.
+
+Open from this stage:
+
+- `--list-row-height` now resolves to 44px in Comfortable, up from upstream's
+  30px. That is DS-001 §16's table-row contract applied faithfully, and it costs
+  roughly a third of the visible rows in a list view. §16 says "Tables → Compact
+  available"; it does not say Compact is their default. **Recommend making
+  Compact the default for list, report and kanban views** and confirming that
+  reading of §16 — this is the one place where following the spec literally has
+  an operational cost worth a second look.
+- The rendered Desk head is verified by source and hook resolution but not yet
+  by an authenticated page load (G4).
+
+---
+
 # Part F — Provenance
 
 **Measurement environment.** `dev.berp.bizera.la` on the private `berp-linux` VM,
@@ -1023,4 +1196,5 @@ re-run the 6 skipped font tests; commit-or-discard `berp_lao/translations/lo.csv
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-09-19 | Initial inventory and contract. Measured on dev bench. Awaiting §D rulings. |
+| 0.3 | 2026-09-19 | Stage 0 and Stage 1 implemented and verified (Part G). §D2 corrected — the CI-001/DS-001 density conflict was my misreading; DS-001 §16 adopted verbatim. §A2 deployment mechanism refined after hitting it. |
 | 0.2 | 2026-09-19 | All six §D decisions ruled by OP-Vily. D2: 44px Comfortable + 32px Compact as a token set. D6: both themes in v1 (departs from recommendation; cost and de-scope route recorded). D1: DS-001 §1 amended to the split layout. D4: `#2EB990` admitted, five values corrected. D5: outlined file becomes LOGO-01 master; small lockup commissioned. Part E resequenced — no stage now blocked on governance. |
