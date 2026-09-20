@@ -391,8 +391,8 @@ def install_frappe_stub() -> types.ModuleType:
 	# navbar write landed on the Website Settings doc and two unrelated force-
 	# semantics checks went red against correct product code. Modelled properly
 	# here so those checks measure what they claim to.
-	frappe._single = _Doc()          # Website Settings
-	frappe._singles: dict = {}       # every other Single, by doctype
+	frappe._single = _Doc()  # Website Settings
+	frappe._singles: dict = {}  # every other Single, by doctype
 
 	def _get_single(doctype):
 		if doctype == "Website Settings":
@@ -422,9 +422,7 @@ def install_frappe_stub() -> types.ModuleType:
 	# brand.py is actually exercised rather than always seeing None.
 	# Routed through _get_single so it sees the same doc brand.py writes, and so
 	# the Navbar Settings mirror is actually exercised rather than always None.
-	frappe.db = types.SimpleNamespace(
-		get_single_value=lambda doctype, field: _get_single(doctype).get(field)
-	)
+	frappe.db = types.SimpleNamespace(get_single_value=lambda doctype, field: _get_single(doctype).get(field))
 
 	utils = types.ModuleType("frappe.utils")
 
@@ -1033,7 +1031,6 @@ def check_palette(assets_root: Path | None) -> None:
 	)
 
 
-
 # ─── E. Desk theme contract (BERP-DS-001A Part I §B) ──────────────────────────
 # Stage 1 ships a Tier 1 token retarget. These checks enforce the parts of the
 # override contract a human reviewer reliably misses: a light block without its
@@ -1080,9 +1077,9 @@ def _theme_blocks(text: str) -> dict[str, set[str]]:
 	blocks: dict[str, set[str]] = {"light": set(), "dark": set()}
 	for match in re.finditer(r"(?P<sel>[^{}]+)\{(?P<body>[^{}]*)\}", text, re.DOTALL):
 		selector = match.group("sel")
-		if "[data-theme=\"dark\"]" in selector:
+		if '[data-theme="dark"]' in selector:
 			key = "dark"
-		elif "[data-theme=\"light\"]" in selector or re.search(r"(^|\s):root\s*,?\s*$", selector):
+		elif '[data-theme="light"]' in selector or re.search(r"(^|\s):root\s*,?\s*$", selector):
 			key = "light"
 		else:
 			continue
