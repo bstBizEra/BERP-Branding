@@ -1205,6 +1205,60 @@ def check_desk_theme(app_root: Path, package: str | None, hooks: dict) -> None:
 		f"only {PRIMITIVES_FILE} carries literals",
 	)
 
+	# E8 — a custom property is never declared above (0,1,0) specificity (ADR-028).
+	#
+	# This is the check that would have caught the --font-stack collision. berp_lao
+	# declared it under `html[lang="lo"]` — (0,1,1) — which beats this app's `:root`
+	# (0,1,0) whatever the load order, so on every Lao tenant the product typeface
+	# silently reverted to a copy of Frappe's stack. Nothing errored and no test on
+	# either side could see it.
+	#
+	# The rule is symmetric: this app must not do to another layer what was done to
+	# it. Scoping belongs in a token's NAME (--berp-font-lao-stack), not in a
+	# selector. Permitted declaration sites are :root, [data-theme="…"] and the
+	# density attribute — each a single class/attribute, i.e. (0,1,0).
+	# Scope: the TOKEN LAYER only — foundations/* and the retarget blocks of the
+	# Desk bundle. _components.scss is deliberately exempt: Tier 2 exists to scope
+	# component appearance by selector (DS-001A §B2), and setting a component-local
+	# property such as --icon-stroke inside a sidebar rule is that mechanism working
+	# as designed, not a token declaration. The hazard this check exists for is a
+	# PUBLISHED token being declared somewhere another app's declaration cannot see.
+	ALLOWED_TOKEN_SELECTORS = (
+		":root",
+		'[data-theme="light"]',
+		'[data-theme="dark"]',
+		'[data-berp-density="compact"]',
+	)
+	over_specific = {}
+	for name, path in files.items():
+		if "foundations/" not in name and not name.endswith("berp_desk.bundle.scss"):
+			continue
+		selector = None
+		for raw in strip_scss_comments(path.read_text(encoding="utf-8")).splitlines():
+			line = raw.strip()
+			if line.endswith("{"):
+				head = line[:-1].strip().rstrip(",")
+				# at-rules (@media, @supports, @mixin) are not selectors; a nested
+				# selector follows and overwrites this, so ignore them outright.
+				selector = None if head.startswith("@") else head
+			elif line.startswith("}"):
+				selector = None
+			elif line.startswith("--") and ":" in line and selector:
+				parts = [p.strip() for p in selector.split(",") if p.strip()]
+				bad = [p for p in parts if p not in ALLOWED_TOKEN_SELECTORS]
+				if bad:
+					over_specific.setdefault(name, set()).update(bad)
+	graded = [n for n in files if "foundations/" in n or n.endswith("berp_desk.bundle.scss")]
+	check(
+		"E8",
+		"Token-layer properties are declared only at (0,1,0)",
+		not over_specific,
+		"; ".join(f"{n}: {', '.join(sorted(v))}" for n, v in over_specific.items())
+		+ " — a token declared on a more specific selector wins across apps "
+		+ "regardless of load order; scope by token name instead (ADR-028)",
+		f"{len(graded)} token-layer file(s) flat at :root/[data-theme]",
+	)
+
 
 IMPORTANT_BUDGET = 2
 

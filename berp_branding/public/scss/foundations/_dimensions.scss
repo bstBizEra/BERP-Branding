@@ -65,7 +65,27 @@
 	//
 	// Order matters: Inter first so Latin keeps its metrics, then the Lao faces,
 	// which carry no Latin glyphs of consequence and so only claim the Lao range.
-	--berp-font-ui: Inter, Phetsarath, "Noto Sans Lao", system-ui, -apple-system,
+	// CI-001 §10: Latin -> Inter; Lao -> approved bERP Lao UI family; fallback ->
+	// Noto Sans Lao. AGENTS.md §3.6 names the approved family as Phetsarath OT.
+	// Ruled 2026-09-20: Phetsarath first, matching §10 read literally.
+	//
+	// CONTRIBUTION SLOT (ADR-028). A Country Pack extends the Lao coverage of this
+	// stack by setting --berp-font-lao-stack ONLY. It must not redeclare
+	// --font-stack or --berp-font-ui: a token is declared by exactly one app, and
+	// scoping belongs in a token's name, never in selector specificity.
+	//
+	// Measured cause, 2026-09-20: berp_lao declared --font-stack under
+	// html[lang="lo"] (0,1,1), which beats this layer's :root (0,1,0) whatever the
+	// load order -- berp_branding already loads last and still lost. The value it
+	// won with was a verbatim copy of Frappe's espresso stack, so on every Lao
+	// tenant the product's typeface silently reverted to upstream's.
+	//
+	// The default below is complete on its own: a site with no Country Pack still
+	// renders Lao correctly. Font fallback is per glyph, so Latin resolves in Inter
+	// and Lao falls through to the families below it, which are the only ones
+	// covering the block.
+	--berp-font-lao-stack: Phetsarath, "Noto Sans Lao";
+	--berp-font-ui: Inter, var(--berp-font-lao-stack), system-ui, -apple-system,
 		"Segoe UI", Roboto, sans-serif;
 	--berp-font-mono: "SF Mono", SFMono-Regular, ui-monospace, "Cascadia Mono",
 		Menlo, Consolas, monospace;
