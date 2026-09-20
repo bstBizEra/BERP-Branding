@@ -835,7 +835,15 @@ Preflight check E7 enforces it thereafter.
 
 ## D4. `#2EB990` is a locked-palette violation, not an undocumented colour
 
-CI-001 §7 locks the brand palette to Mint, Teal, Slate, Charcoal and White.
+> **CITATION CORRECTED (2026-09-21, ruling R4).** This section's "CI-001 §6/§7" and
+> §D5's "CI-001 §4" both mean **BERP-CI-002** *Corporate Identity & Product Design
+> System* — §4 Locked identity assets, §7 Core logo palette — **not** BERP-CI-001
+> *Brand & UI Design System*, where §4 is "Incorrect logo usage" and §7 is "Neutral
+> architecture". Same class of ambiguity as D1, and found the same way: by reading the
+> section before editing it rather than trusting the number. Both amendments were
+> applied to CI-002 on 2026-09-21.
+
+CI-002 §7 locks the brand palette to Mint, Teal, Slate, Charcoal and White.
 Preflight check D8, run against the kit, reports six values in the artwork that
 are not in that ramp:
 
@@ -860,6 +868,16 @@ correct the artwork to the locked palette. Leaving it as a standing warning mean
 the preflight's palette check stops carrying information, which is worse than
 either resolution.
 
+> **EXECUTED 2026-09-21.** Five values corrected to the nearest ramp step; `#2EB990`
+> admitted in CI-002 §7 as `brand.plate`, a sanctioned extension with a stated role
+> and a 2.31:1 contrast constraint; preflight D8 raised WARN → FAIL and validated
+> against a known-bad control. One divergence from the ruling's letter, recorded:
+> `#231F20` was corrected to **Neutral 900 `#1F2021`** (distance 4.2), not to Charcoal
+> `#414142` (distance ~30). The ruling's own rationale — "near-black off the ramp by 2
+> points" — describes Neutral 900; "Charcoal" was a loose label for near-black. Taking
+> the letter would have visibly lightened the black-and-white mark, contradicting the
+> stated rationale that these were artefacts without design intent.
+>
 > **RULING (2026-09-19): both, split by value.** The ruling selected *extend §7
 > for `#2EB990`* and *correct the artwork to the locked palette*. Those two
 > conflict on `#2EB990` alone, so they are reconciled here by intent — admit the
@@ -898,6 +916,13 @@ ship as `berp-lockup-horizontal.svg` and `berp-lockup-vertical.svg`, with zero
 master, and retire `hText.svg` / `vText.svg` from the kit. D4 then passes and the
 preflight returns to a clean baseline.
 
+> **EXECUTED 2026-09-21.** CI-002 §4 now names `bERP_Logo_hTextOL.svg` (LOGO-01) and
+> `bERP_Logo_vTextOL.svg` (LOGO-03). `hText.svg` and `vText.svg` are moved to
+> `Brandkit/_retired/` with a README stating why — **moved, not deleted**: the
+> preflight scans `--assets` recursively, so a subfolder inside `Logo/SVG` would not
+> have retired them, and they remain the editable source if the tagline is ever
+> re-set. D4 now passes, validated against a control that restores one of them.
+>
 > **RULING (2026-09-19): amend CI-001 §4 to name the outlined file as LOGO-01
 > master.** `bERP_Logo_hTextOL.svg` becomes the master; `hText.svg` and
 > `vText.svg` are retired from the kit. Preflight D4 then passes and the
@@ -1235,5 +1260,6 @@ re-run the 6 skipped font tests; commit-or-discard `berp_lao/translations/lo.csv
 |---|---|---|
 | 0.1 | 2026-09-19 | Initial inventory and contract. Measured on dev bench. Awaiting §D rulings. |
 | 0.3 | 2026-09-19 | Stage 0 and Stage 1 implemented and verified (Part G). §D2 corrected — the CI-001/DS-001 density conflict was my misreading; DS-001 §16 adopted verbatim. §A2 deployment mechanism refined after hitting it. |
+| 0.5 | 2026-09-21 | §D4 and §D5 **executed**, closing Stage 0.9 and 0.10. `--assets` preflight to **50 pass / 0 fail / 1 warn** from 48/1/2. Both rulings' "CI-001" citations corrected to **CI-002** (R4 class). One documented divergence: `#231F20` → Neutral 900, not Charcoal. |
 | 0.4 | 2026-09-20 | Rulings R1–R4 from BERP-CI-GAP-001 implemented. D1's citation re-pointed to BERP-DS-001B after R4 resolved the identifier collision. Neutral 450/350 added; placeholder contrast fixed at Tier 2 (2.43 → 4.77:1); container spacing to the 4px grid; body weight wired to 400. |
 | 0.2 | 2026-09-19 | All six §D decisions ruled by OP-Vily. D2: 44px Comfortable + 32px Compact as a token set. D6: both themes in v1 (departs from recommendation; cost and de-scope route recorded). D1: DS-001 §1 amended to the split layout. D4: `#2EB990` admitted, five values corrected. D5: outlined file becomes LOGO-01 master; small lockup commissioned. Part E resequenced — no stage now blocked on governance. |

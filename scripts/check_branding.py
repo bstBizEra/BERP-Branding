@@ -798,6 +798,14 @@ CI_PALETTE = {
 	"#8B8D90",
 	"#595A5C",
 	"#414142",
+	# Ruling D4 (2026-09-19): admitted as a sanctioned extension, not a stray.
+	# ROLE: the icon background plate in bERP_Logo_IconBgGreen.svg. It is a
+	# deliberate green distinct from the brand teal and is the ONLY off-ramp
+	# value in the kit with design intent behind it; the other five were export
+	# artefacts and were corrected to the ramp the same day.
+	# CONTRAST: 2.31:1 on white. Plate fill only — never text, never a border
+	# that carries meaning, never a focus indicator.
+	"#2EB990",
 	"#2F3031",
 	"#1F2021",
 }
@@ -1009,8 +1017,13 @@ def check_palette(assets_root: Path | None) -> None:
 		stray = found - CI_PALETTE
 		if stray:
 			offenders[svg.name] = stray
+	# Severity raised WARN -> FAIL by ruling D4 (2026-09-19). A standing warning
+	# that nobody clears stops carrying information: the six values below sat in
+	# the kit for two days reported as a warning and nothing moved. Five are now
+	# corrected and #2EB990 is admitted above with a stated role, so the check has
+	# a clean baseline to defend — which is the only state in which FAIL is fair.
 	record(
-		WARN if offenders else PASS,
+		FAIL if offenders else PASS,
 		"D8",
 		"Artwork uses only CI-001 palette colours",
 		"; ".join(f"{n}: {', '.join(sorted(c))}" for n, c in offenders.items())
