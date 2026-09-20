@@ -42,15 +42,21 @@
 	// ships in Stage 2; until then it resolves only if present on the client.
 	// This is NOT the print/PDF font contract, which the bERP font ADR governs.
 	--font-stack: var(--berp-font-ui);
+	// Upstream sets --weight-regular: 420, an optical weight tuned for InterVariable.
+	// Phetsarath is a static 400/700 face and cannot render 420, so CSS font matching
+	// drops Lao glyphs to 400 while Latin stays at 420 — a mixed-weight line in exactly
+	// the bilingual text this product exists for. 400 renders identically in all three
+	// faces. Ruled 2026-09-20 (R3).
+	--weight-regular: var(--berp-weight-regular);
 
 	// Text. --text-muted carries 75 uses and is the pair that decides whether
 	// the product passes AA at caption size; Neutral 500 measures 6.90:1 on
 	// white where Neutral 400 is 3.33:1 and fails.
 	--text-color: var(--berp-text-primary);
 	--text-muted: var(--berp-text-secondary);
-	--text-light: var(--berp-text-disabled);
+	--text-light: var(--berp-text-tertiary);
 	--heading-color: var(--berp-text-primary);
-	--placeholder-color: var(--berp-text-disabled);
+	--placeholder-color: var(--berp-text-tertiary);
 
 	// Surfaces. CI-001 §7's page/card split: the page is Neutral 50, cards and
 	// controls sit on white above it.
@@ -126,12 +132,18 @@
 // measurement, not by inverting the light map — see foundations/_semantic.scss.
 [data-theme="dark"] {
 	--font-stack: var(--berp-font-ui);
+	// Upstream sets --weight-regular: 420, an optical weight tuned for InterVariable.
+	// Phetsarath is a static 400/700 face and cannot render 420, so CSS font matching
+	// drops Lao glyphs to 400 while Latin stays at 420 — a mixed-weight line in exactly
+	// the bilingual text this product exists for. 400 renders identically in all three
+	// faces. Ruled 2026-09-20 (R3).
+	--weight-regular: var(--berp-weight-regular);
 
 	--text-color: var(--berp-text-primary);
 	--text-muted: var(--berp-text-secondary);
-	--text-light: var(--berp-text-disabled);
+	--text-light: var(--berp-text-tertiary);
 	--heading-color: var(--berp-text-primary);
-	--placeholder-color: var(--berp-text-disabled);
+	--placeholder-color: var(--berp-text-tertiary);
 
 	--bg-color: var(--berp-surface-page);
 	--fg-color: var(--berp-surface-default);

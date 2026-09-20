@@ -170,3 +170,68 @@ img[src*="/erpnext/icons/desktop_icons/"] {
 	--icon-stroke: var(--berp-nav-selected-fg);
 	color: var(--berp-nav-selected-fg);
 }
+
+// ---------------------------------------------------------------------------
+// Container spacing — DS-001 §14 / §16 "card internal spacing", ruled R2
+// (2026-09-20): adopt the 4px grid for CONTAINER spacing only; leave control
+// padding upstream.
+//
+// Why this is Tier 2 and not a token retarget. Upstream's container rules
+// consume the SAME tokens as its controls — measured in the built bundle,
+// `padding: var(--padding-md)` appears on `.form-section .section-head` and on
+// dialog rows alike. Retargeting --padding-md to the 4px grid would move both,
+// which is exactly the control reflow R2 ruled against. Containers can only be
+// reached by selector.
+//
+// Specificity, measured against the built desk bundle (B2.1):
+//   upstream  .widget      { padding: 7px }        0,1,0
+//   upstream  .card-body   { padding: 1.25rem }    0,1,0
+// Ours match at 0,1,0 and win on source order — no !important (B2.2).
+//
+// Deliberately NOT escalated: `.widget.edit-mode` (0,2,0, padding 7px 12px),
+// `.widget.links-widget-box` (0,2,0, 10px 12px) and `.widget.dashboard-widget-box
+// .widget-head` (0,2,0 + descendant) all outrank these rules and keep their own
+// padding. That is the intended outcome — those are toolbars and inline editors,
+// not card interiors.
+//
+// Scope note: this is a visible reflow of the workspace. Upstream's card
+// interior is 7px; DS-001 §16 Comfortable is 24px. That is the spec, but it has
+// NOT been visually verified — the authenticated page load this needs is the
+// standing gap in §7.1 of BERP-CI-GAP-001. Verify before promoting past dev.
+// ---------------------------------------------------------------------------
+.widget,
+.card-body {
+	padding: var(--berp-card-padding);
+}
+
+// ---------------------------------------------------------------------------
+// Placeholder contrast — ruling R1 (2026-09-20), Tier 2 because Tier 1 cannot
+// reach it.
+//
+// The obvious instrument was --placeholder-color. Measured in the built desk
+// bundle it has **zero references** — it is declared (light var(--gray-50),
+// dark var(--gray-700)) and consumed by nothing. It is the fourth token in this
+// workstream whose name promised more than its usage, after --brand-color,
+// --sidebar-active-color and Frappe's unused teal ramp. It is retargeted in the
+// token layer anyway, harmlessly, in case upstream ever wires it.
+//
+// What actually paints a placeholder, measured:
+//     .form-control::placeholder { color: var(--gray-500); opacity: 1 }
+// --gray-500 is #999999, an espresso PRIMITIVE. B1.1 forbids redeclaring a
+// primitive — doing so would recolour every neutral keyed to gray-500 across
+// both apps — so the only correct instrument is this selector.
+//
+// Contrast, measured against the surface a placeholder actually sits on
+// (--control-bg resolves to --berp-surface-subtle, NOT the page):
+//     light  #66686B on neutral.100 #ECEDEE = 4.77:1   (was #999999 = 2.59:1)
+//     dark   #B1B3B6 on neutral.700 #414142 = 4.85:1
+// WCAG 1.4.3 exempts disabled controls; a placeholder in an ACTIVE input is not
+// exempt and needs 4.5:1.
+//
+// Specificity: upstream `.form-control::placeholder` is 0,1,1. Ours matches at
+// 0,1,1 and wins on source order — no !important (B2.2).
+// ---------------------------------------------------------------------------
+.form-control::placeholder {
+	color: var(--berp-text-tertiary);
+	opacity: 1;
+}

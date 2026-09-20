@@ -27,6 +27,11 @@
 	// text            measured on surface.default / page / subtle
 	--berp-text-primary: var(--berp-neutral-900);     // 16.32 / 15.24 / 13.92
 	--berp-text-secondary: var(--berp-neutral-500);   //  6.90 /  6.45 /  5.89
+	--berp-text-tertiary: var(--berp-neutral-450);    //  5.59 /  5.22 /  4.77 on control-bg
+	// Placeholder and light/tertiary text. Distinct from text-disabled, which stays at
+	// neutral.400 (3.33:1) deliberately: WCAG 1.4.3 exempts disabled controls, but a
+	// placeholder inside an ACTIVE input is not exempt and must clear 4.5:1.
+	// The binding surface is --control-bg (neutral.100), not the page: 4.77:1 there.
 	--berp-text-disabled: var(--berp-neutral-400);    //  3.33 /  3.11 /  2.84 — see note
 	--berp-text-inverse: var(--berp-neutral-0);
 	--berp-text-link: var(--berp-teal-700);           //  5.68 /  5.31 /  4.85
@@ -73,6 +78,7 @@
 [data-theme="dark"] {
 	--berp-text-primary: var(--berp-neutral-0);       // 16.32 / 13.22 / 10.20
 	--berp-text-secondary: var(--berp-neutral-300);   //  8.57 /  6.94 /  5.35
+	--berp-text-tertiary: var(--berp-neutral-350);    //  6.29 on surface, 4.85 on control-bg
 	--berp-text-disabled: var(--berp-neutral-400);    //  4.90 /  3.97 /  3.06
 	--berp-text-inverse: var(--berp-neutral-900);
 	// teal.700 measures 2.87:1 here and fails. teal.300 is 8.93:1.
