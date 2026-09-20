@@ -4,8 +4,12 @@
 Part D ruled by OP-Vily, 2026-09-19. §D2 corrected on reading both parents in full.
 **Status:** Controlled unit. Mandated by BERP-DS-001 §"next controlled unit", which
 gates further theme code behind this document.
-**Authority:** Subordinate to BERP-CI-001 (brand primitives) and BERP-DS-001
-(component system). Where this document and those disagree, §D records the
+**Authority:** Subordinate to BERP-CI-001 (*Brand & UI Design System*) and
+BERP-DS-001 (*Design Tokens & Component Specification*). Ruling R4 (2026-09-20)
+resolved an identifier collision: two files carried each of those identifiers with
+incompatible section numbering. Every `CI-001 §n` and `DS-001 §n` in this document
+resolves against the two files named above — **except ruling D1**, which means
+BERP-DS-001B. See §D1. Where this document and those disagree, §D records the
 conflict rather than resolving it unilaterally.
 **Scope:** The Frappe Desk and every ERPNext surface rendered inside it. The
 authentication surface is already shipped and is treated here as the reference
@@ -717,9 +721,17 @@ Two rulings depart from the recommendation given — D6 (dark mode) and part of
 D4 (palette). Both are recorded as given, with the cost of each stated plainly
 so the next session inherits the trade-off and not just the outcome.
 
-## D1. The login surface contradicts DS-001 §1
+## D1. The login surface contradicts DS-001B §1
 
-DS-001 §1 specifies an *Authentication Card* in White `#FFFFFF` on a *Page
+> **CITATION CORRECTED (2026-09-20, ruling R4).** This section's "DS-001 §1" means
+> **BERP-DS-001B** *ERPNext UI Rebranding & Component System* §1 (ERPNext Login →
+> bERP Login) — **not** BERP-DS-001 *Design Tokens* §1 (Artifact control), which is
+> where every other DS-001 citation in this document resolves. At the time D1 was
+> ruled both files carried the identifier DS-001, so the ruling was ambiguous about
+> which document to amend. It is now unambiguous, and the amendment is still
+> outstanding: it lands in **BERP-DS-001B §1**.
+
+DS-001B §1 specifies an *Authentication Card* in White `#FFFFFF` on a *Page
 Background* of Neutral 50 `#F7F7F8`, card radius 16px, with a `[ bERP logo ]`
 inside the auth panel. What shipped, and what was approved visually in this
 workstream, is a full-bleed split layout with no card and the in-panel logo
@@ -733,9 +745,9 @@ specification, rather than rebuilding the login to match a superseded spec. A
 controlled document that disagrees with approved, shipped, tested work should be
 corrected, not obeyed.
 
-> **RULING (2026-09-19): amend DS-001 §1 to the split layout.** The shipped auth
+> **RULING (2026-09-19): amend DS-001B §1 to the split layout.** The shipped auth
 > surface is authoritative. DS-001 §1's card specification is superseded and is
-> not to be inherited by Desk components. Action: revise DS-001 §1; no code
+> not to be inherited by Desk components. Action: revise BERP-DS-001B §1; no code
 > change.
 
 ## D2. Control height — CI-001 §21 vs DS-001 §16
@@ -960,7 +972,7 @@ Blocked by: nothing. Unblocks: everything. **Start here.**
 | 0.5 | Commit `scripts/recon_desk_surface.sh` and record the §A baseline | — | C4 |
 | 0.6 | Resolve the `lao_regional` module collision (`lao_berp` and `berp_lao` both declare it) | — | open item |
 | 0.7 | Durable compose fix for the frontend container's asset overlay | — | A2 |
-| 0.8 | Amend **DS-001 §1** to the split login layout; amend **DS-001 §16** to 44px and add the Compact set | — | D1, D2 |
+| 0.8 | Amend **BERP-DS-001B §1** to the split login layout; amend **DS-001 §16** to 44px and add the Compact set | — | D1, D2 |
 | 0.9 | Amend **CI-001 §4** to name `hTextOL.svg` as LOGO-01 master; retire `hText`/`vText`. Amend **§6/§7** to admit `#2EB990` with a stated role | — | D5, D4 |
 | 0.10 | Correct the five off-palette artwork values; raise preflight D8 from WARN to FAIL | — | D4 |
 | 0.11 | Commission `berp-lockup-small.svg` (outlined, no tagline, legible at 200px) — does not block Stage 1 | — | D5 |
@@ -1223,4 +1235,5 @@ re-run the 6 skipped font tests; commit-or-discard `berp_lao/translations/lo.csv
 |---|---|---|
 | 0.1 | 2026-09-19 | Initial inventory and contract. Measured on dev bench. Awaiting §D rulings. |
 | 0.3 | 2026-09-19 | Stage 0 and Stage 1 implemented and verified (Part G). §D2 corrected — the CI-001/DS-001 density conflict was my misreading; DS-001 §16 adopted verbatim. §A2 deployment mechanism refined after hitting it. |
+| 0.4 | 2026-09-20 | Rulings R1–R4 from BERP-CI-GAP-001 implemented. D1's citation re-pointed to BERP-DS-001B after R4 resolved the identifier collision. Neutral 450/350 added; placeholder contrast fixed at Tier 2 (2.43 → 4.77:1); container spacing to the 4px grid; body weight wired to 400. |
 | 0.2 | 2026-09-19 | All six §D decisions ruled by OP-Vily. D2: 44px Comfortable + 32px Compact as a token set. D6: both themes in v1 (departs from recommendation; cost and de-scope route recorded). D1: DS-001 §1 amended to the split layout. D4: `#2EB990` admitted, five values corrected. D5: outlined file becomes LOGO-01 master; small lockup commissioned. Part E resequenced — no stage now blocked on governance. |
