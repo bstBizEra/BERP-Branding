@@ -84,9 +84,15 @@
 	// renders Lao correctly. Font fallback is per glyph, so Latin resolves in Inter
 	// and Lao falls through to the families below it, which are the only ones
 	// covering the block.
-	--berp-font-lao-stack: Phetsarath, "Noto Sans Lao";
-	--berp-font-ui: Inter, var(--berp-font-lao-stack), system-ui, -apple-system,
-		"Segoe UI", Roboto, sans-serif;
+	// The slot is READ here with a complete default and is deliberately NOT
+	// declared. Both apps declare at :root, i.e. (0,1,0), so a declaration here
+	// would be resolved by source order — and berp_branding loads LAST in
+	// app_include_css, so its default would overwrite the Country Pack's
+	// contribution every time. A var() fallback inverts that: the token exists
+	// only if a contributor sets it, and the default applies otherwise. This is
+	// the whole mechanism; declaring the slot here would silently disable it.
+	--berp-font-ui: Inter, var(--berp-font-lao, Phetsarath, "Noto Sans Lao"),
+		system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 	--berp-font-mono: "SF Mono", SFMono-Regular, ui-monospace, "Cascadia Mono",
 		Menlo, Consolas, monospace;
 
