@@ -172,37 +172,46 @@ img[src*="/erpnext/icons/desktop_icons/"] {
 }
 
 // ---------------------------------------------------------------------------
-// Container spacing — DS-001 §14 / §16 "card internal spacing", ruled R2
-// (2026-09-20): adopt the 4px grid for CONTAINER spacing only; leave control
-// padding upstream.
+// Container spacing — DS-001 §14 / §16, ruling R2. NOT applied to Frappe's
+// widgets. Withdrawn 2026-09-21 after measuring what it actually reached.
 //
-// Why this is Tier 2 and not a token retarget. Upstream's container rules
-// consume the SAME tokens as its controls — measured in the built bundle,
-// `padding: var(--padding-md)` appears on `.form-section .section-head` and on
-// dialog rows alike. Retargeting --padding-md to the 4px grid would move both,
-// which is exactly the control reflow R2 ruled against. Containers can only be
-// reached by selector.
+// R2 ruled: adopt the 4px grid for CONTAINER spacing, leave control padding
+// upstream. I implemented that as
 //
-// Specificity, measured against the built desk bundle (B2.1):
-//   upstream  .widget      { padding: 7px }        0,1,0
-//   upstream  .card-body   { padding: 1.25rem }    0,1,0
-// Ours match at 0,1,0 and win on source order — no !important (B2.2).
+//     .widget, .card-body { padding: var(--berp-card-padding); }   // 0,1,0
 //
-// Deliberately NOT escalated: `.widget.edit-mode` (0,2,0, padding 7px 12px),
-// `.widget.links-widget-box` (0,2,0, 10px 12px) and `.widget.dashboard-widget-box
-// .widget-head` (0,2,0 + descendant) all outrank these rules and keep their own
-// padding. That is the intended outcome — those are toolbars and inline editors,
-// not card interiors.
+// which ties upstream's `.widget { padding: 7px }` and wins on source order.
+// Measured on the bench, that is the wrong instrument, for a reason the
+// cascade shows and a screenshot would have shown more slowly:
 //
-// Scope note: this is a visible reflow of the workspace. Upstream's card
-// interior is 7px; DS-001 §16 Comfortable is 24px. That is the spec, but it has
-// NOT been visually verified — the authenticated page load this needs is the
-// standing gap in §7.1 of BERP-CI-GAP-001. Verify before promoting past dev.
+// Upstream tunes padding PER WIDGET VARIANT, at 0,2,0, which outranks us:
+//
+//     .widget.number-widget-box      padding: 12px        <- keeps its own
+//     .widget.links-widget-box       padding: 10px 12px   <- keeps its own
+//     .widget.onboarding-widget-box  padding: 0 15px 30px <- keeps its own
+//     .widget.edit-mode              padding: 7px 12px    <- keeps its own
+//     .widget.shortcut-widget-box    (none)               <- would take 24px
+//     .widget.dashboard-widget-box   (none)               <- would take 24px
+//     .widget.quick-list-widget-box  (none)               <- would take 24px
+//
+// So the rule did not move "cards" to 24px. It moved SOME of them, leaving a
+// number card at 12px beside a shortcut tile at 24px on the same workspace
+// row. Inconsistent padding across one row is worse than either value applied
+// uniformly, and it is not what §16 asks for.
+//
+// `.card-body` went with it: one rule in the built bundle, and its templates
+// are the auth pages — which berp_branding already styles under its own
+// `.berp-auth` scope — plus the kanban card. Neither is a bERP card.
+//
+// The reading that survives: §16's "card internal spacing" governs bERP's OWN
+// card components. Frappe's workspace widgets are a different component with a
+// deliberate scale of their own, and overriding it selectively is not adopting
+// a grid, it is breaking one. --berp-card-padding stays published in the token
+// layer (24 Comfortable / 16 Compact) for the first bERP card that needs it.
+//
+// This is a correction to work that shipped, not a re-litigation of R2: the
+// ruling stands, the instrument was wrong.
 // ---------------------------------------------------------------------------
-.widget,
-.card-body {
-	padding: var(--berp-card-padding);
-}
 
 // ---------------------------------------------------------------------------
 // Placeholder contrast — ruling R1 (2026-09-20), Tier 2 because Tier 1 cannot
