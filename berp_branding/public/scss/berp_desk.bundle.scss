@@ -1,0 +1,196 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// bERP Desk theme — Tier 1 token retarget.
+// BERP-DS-001A Part I §B1. Stage 1 of the Part E plan.
+//
+// HOW THIS WINS, AND WHY THERE IS NO !important IN THIS FILE
+// Frappe injects every Desk stylesheet through one hook, app_include_css,
+// looped in www/desk.html, and aggregates that hook across apps in installed
+// order. Measured on the dev bench:
+//
+//     installed_apps  : ['frappe', 'erpnext', 'lao_berp', 'berp_branding']
+//     app_include_css : ['desk.bundle.css', 'report.bundle.css',
+//                        'erpnext.bundle.css', 'lao_berp.bundle.css']
+//
+// berp_branding is last, so this file loads after everything upstream ships and
+// wins on source order at equal specificity. ERPNext declares ZERO custom
+// properties of its own, so retargeting Frappe's reaches both applications.
+//
+// WHAT THIS FILE MAY AND MAY NOT DO  (DS-001A §B1)
+//   MAY   redeclare Frappe's SEMANTIC custom properties (--text-color,
+//         --control-bg, --primary ...) pointing them at --berp-* tokens.
+//   MUST  write every block twice: light and dark (§B1.2 / §A8).
+//   MAY NOT redeclare a Frappe PRIMITIVE (--gray-*, --ink-*, --surface-*,
+//         --outline-*). Those carry deliberate non-brand meaning in both themes
+//         and Frappe inverts its gray ramp in dark; overwriting them would
+//         recolour states that must stay neutral. Preflight E4 enforces this.
+//   MAY NOT contain a raw colour value (DS-001 §39). Preflight E7 enforces it.
+//   MAY NOT contain a selector override in THIS file. Tier 2 rules live in
+//         _components.scss, imported at the end, so the two tiers stay separable
+//         and reviewable apart.
+//
+// Because bERP primitives are ABSOLUTE and Frappe's are inverted per theme,
+// pointing a Frappe semantic at a --berp-* token is theme-safe by construction.
+// ═════════════════════════════════════════════════════════════════════════════
+
+@import "foundations/tokens";
+
+// ── LIGHT ────────────────────────────────────────────────────────────────────
+:root,
+[data-theme="light"] {
+	// Typography. Frappe already bundles and self-hosts Inter, so no external
+	// font host is introduced. "Noto Sans Lao" is named here and the web face
+	// ships in Stage 2; until then it resolves only if present on the client.
+	// This is NOT the print/PDF font contract, which the bERP font ADR governs.
+	--font-stack: var(--berp-font-ui);
+	// Upstream sets --weight-regular: 420, an optical weight tuned for InterVariable.
+	// Phetsarath is a static 400/700 face and cannot render 420, so CSS font matching
+	// drops Lao glyphs to 400 while Latin stays at 420 — a mixed-weight line in exactly
+	// the bilingual text this product exists for. 400 renders identically in all three
+	// faces. Ruled 2026-09-20 (R3).
+	--weight-regular: var(--berp-weight-regular);
+
+	// Text. --text-muted carries 75 uses and is the pair that decides whether
+	// the product passes AA at caption size; Neutral 500 measures 6.90:1 on
+	// white where Neutral 400 is 3.33:1 and fails.
+	--text-color: var(--berp-text-primary);
+	--text-muted: var(--berp-text-secondary);
+	--text-light: var(--berp-text-tertiary);
+	--heading-color: var(--berp-text-primary);
+	--placeholder-color: var(--berp-text-tertiary);
+
+	// Surfaces. CI-001 §7's page/card split: the page is Neutral 50, cards and
+	// controls sit on white above it.
+	--bg-color: var(--berp-surface-page);
+	--fg-color: var(--berp-surface-default);
+	--card-bg: var(--berp-surface-default);
+	--modal-bg: var(--berp-surface-default);
+	--popover-bg: var(--berp-surface-default);
+	--fg-hover-color: var(--berp-surface-subtle);
+	--subtle-fg: var(--berp-surface-subtle);
+	--subtle-accent: var(--berp-surface-page);
+	--highlight-color: var(--berp-surface-page);
+
+	// Controls
+	--control-bg: var(--berp-surface-subtle);
+	--control-bg-on-gray: var(--berp-border-default);
+	--disabled-control-bg: var(--berp-surface-page);
+	--awesomebar-focus-bg: var(--berp-surface-default);
+
+	// Borders — DS-001 §17
+	--border-color: var(--berp-border-default);
+	--dark-border-color: var(--berp-border-strong);
+	--table-border-color: var(--berp-border-default);
+	--btn-group-border-color: var(--berp-border-strong);
+	--divider-color: var(--berp-border-default);
+
+	// Brand action. --primary carries 20 uses and is upstream's near-black
+	// #171717; this is the single change that most makes the Desk read as bERP.
+	// --brand-color is deliberately NOT set: it is declared upstream but
+	// referenced zero times in the Desk (DS-001A §A4).
+	--primary: var(--berp-action-primary);
+	--primary-color: var(--berp-action-primary);
+	--btn-primary: var(--berp-action-primary);
+	--btn-default-bg: var(--berp-surface-subtle);
+	--btn-default-hover-bg: var(--berp-border-default);
+	--btn-ghost-hover-bg: var(--berp-surface-subtle);
+
+	// Navigation — CI-001 §19. Selected item: Teal 50 surface, Teal 900 text.
+	--navbar-bg: var(--berp-surface-default);
+	--sidebar-select-color: var(--berp-selection-surface);
+	--sidebar-hover-color: var(--berp-surface-subtle);
+	--sidebar-border-color: var(--berp-border-default);
+	// BACKGROUND of the selected row, not a text colour. Upstream:
+	//   .active-sidebar { background: var(--sidebar-active-color); … }
+	//   :root            --sidebar-active-color: rgba(255,255,255,1)
+	// Stage 1 read the name as a text colour and pointed it at --berp-text-primary.
+	// Measured consequence: the selected row rendered #1F2021 with a #525252
+	// label — 2.09:1, against a 4.5 floor — and pure WHITE in dark mode. On the
+	// primary navigation element. CI-001 §19 wants Teal 50/100 here.
+	--sidebar-active-color: var(--berp-selection-surface);
+
+	// ── Density — DS-001 §16, flowing into Frappe's dimension properties ────
+	// Upstream ships 28px controls and 30px rows. These are the properties that
+	// carry the density ruling into the Desk.
+	--btn-height: var(--berp-control-height);
+	--input-height: var(--berp-control-height);
+	--list-row-height: var(--berp-row-height);
+
+	// Shape. Frappe already ships 8 / 12 / 16, which matches CI-001 §13 exactly,
+	// so only the two intermediate steps move onto the bERP scale.
+	--border-radius: var(--berp-radius-control);
+	--border-radius-sm: var(--berp-radius-sm);
+	--border-radius-md: var(--berp-radius-md);
+	--border-radius-lg: var(--berp-radius-card);
+	--border-radius-xl: var(--berp-radius-modal);
+}
+
+// ── DARK ─────────────────────────────────────────────────────────────────────
+// Per DS-001A §D6 both themes ship in v1. Delete this block to de-scope; the
+// light block above is self-contained and does not reference it.
+//
+// Every value here resolves through the dark semantic map, which was derived by
+// measurement, not by inverting the light map — see foundations/_semantic.scss.
+[data-theme="dark"] {
+	--font-stack: var(--berp-font-ui);
+	// Upstream sets --weight-regular: 420, an optical weight tuned for InterVariable.
+	// Phetsarath is a static 400/700 face and cannot render 420, so CSS font matching
+	// drops Lao glyphs to 400 while Latin stays at 420 — a mixed-weight line in exactly
+	// the bilingual text this product exists for. 400 renders identically in all three
+	// faces. Ruled 2026-09-20 (R3).
+	--weight-regular: var(--berp-weight-regular);
+
+	--text-color: var(--berp-text-primary);
+	--text-muted: var(--berp-text-secondary);
+	--text-light: var(--berp-text-tertiary);
+	--heading-color: var(--berp-text-primary);
+	--placeholder-color: var(--berp-text-tertiary);
+
+	--bg-color: var(--berp-surface-page);
+	--fg-color: var(--berp-surface-default);
+	--card-bg: var(--berp-surface-default);
+	--modal-bg: var(--berp-surface-default);
+	--popover-bg: var(--berp-surface-default);
+	--fg-hover-color: var(--berp-surface-subtle);
+	--subtle-fg: var(--berp-surface-subtle);
+	--subtle-accent: var(--berp-surface-subtle);
+	--highlight-color: var(--berp-surface-subtle);
+
+	--control-bg: var(--berp-surface-subtle);
+	--control-bg-on-gray: var(--berp-border-default);
+	--disabled-control-bg: var(--berp-surface-subtle);
+	--awesomebar-focus-bg: var(--berp-surface-default);
+
+	--border-color: var(--berp-border-default);
+	--dark-border-color: var(--berp-border-strong);
+	--table-border-color: var(--berp-border-default);
+	--btn-group-border-color: var(--berp-border-strong);
+	--divider-color: var(--berp-border-default);
+
+	--primary: var(--berp-action-primary);
+	--primary-color: var(--berp-action-primary);
+	--btn-primary: var(--berp-action-primary);
+	--btn-default-bg: var(--berp-surface-subtle);
+	--btn-default-hover-bg: var(--berp-border-default);
+	--btn-ghost-hover-bg: var(--berp-surface-subtle);
+
+	--navbar-bg: var(--berp-surface-default);
+	--sidebar-select-color: var(--berp-selection-surface);
+	--sidebar-hover-color: var(--berp-surface-subtle);
+	--sidebar-border-color: var(--berp-border-default);
+	--sidebar-active-color: var(--berp-selection-surface);
+
+	--btn-height: var(--berp-control-height);
+	--input-height: var(--berp-control-height);
+	--list-row-height: var(--berp-row-height);
+
+	--border-radius: var(--berp-radius-control);
+	--border-radius-sm: var(--berp-radius-sm);
+	--border-radius-md: var(--berp-radius-md);
+	--border-radius-lg: var(--berp-radius-card);
+	--border-radius-xl: var(--berp-radius-modal);
+}
+
+// ── Tier 2 (Stage 3) ─────────────────────────────────────────────────────────
+// Kept in its own file so the token layer above can be read, reviewed and
+// reverted independently of the selector overrides.
+@import "components";

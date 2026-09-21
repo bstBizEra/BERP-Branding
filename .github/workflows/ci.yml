@@ -1,0 +1,62 @@
+name: CI
+
+# Mirrors bstBizEra/berp_lao_app's ci.yml in shape and triggers, so the two repos
+# behave the same way in a PR.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # pyproject declares requires-python = ">=3.10". The floor is tested, not
+          # assumed: check_branding.py uses PEP 604 `X | None`, which is 3.10+, and
+          # a silent bump would only surface on someone's machine.
+          python-version: "3.10"
+
+      # No install step. check_branding.py is deliberately dependency-free — it is
+      # the gate that has to run everywhere, including a bench with no egress, so
+      # it imports nothing outside the standard library. If this ever needs a pip
+      # install, that is the signal the design drifted.
+      - name: Branding contract
+        run: python3 scripts/check_branding.py
+
+      - name: Contrast instrument self-check
+        # contrast.py verifies itself against the five ratios CI-001 §6 publishes
+        # before it reports anything. REVIEW-METHOD P2: a measuring tool that has
+        # not been checked against a known value is not evidence. Worst delta is
+        # currently 0.004.
+        run: python3 scripts/contrast.py
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff==0.15.11
+
+      - name: ruff check
+        run: ruff check berp_branding scripts
+
+      - name: ruff format --check
+        run: ruff format --check berp_branding scripts

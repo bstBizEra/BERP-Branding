@@ -1,0 +1,172 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// bERP dimensions — density, radius, spacing, type, border, motion.
+// Theme-independent: these do not change between light and dark.
+//
+// Sources: DS-001 §12 (type), §14 (spacing), §15 (radius), §16 (density),
+// §17 (border/focus), §19 (motion); CI-001 §11-§14.
+// ─────────────────────────────────────────────────────────────────────────────
+
+:root {
+	// ── DS-001 §16 density model — Comfortable (default) ───────────────────
+	// Reproduced verbatim from the controlled matrix. DS-001A §D2 originally
+	// reported CI-001 §21 and this table as contradicting; on reading both in
+	// full they do not — CI-001 §21's Compact/Standard/Comfortable are three
+	// SIZES OF ONE CONTROL, while this is a DENSITY MODE with five contracts.
+	// They reconcile: CI-001's "Standard 40" is this table's Comfortable
+	// standard control; CI-001's "Comfortable 44-48" is this table's table row
+	// (44) and large control (48). This table governs.
+	--berp-control-height: 40px;
+	--berp-control-height-lg: 48px;
+	--berp-row-height: 44px;
+	--berp-nav-item-height: 40px;
+	--berp-card-padding: 24px;
+
+	// Small control — CI-001 §13 "small control" radius band and §20 size S.
+	--berp-control-height-sm: 32px;
+
+	// ── DS-001 §15 radius ──────────────────────────────────────────────────
+	--berp-radius-none: 0;
+	--berp-radius-xs: 4px;
+	--berp-radius-sm: 6px;
+	--berp-radius-md: 8px;
+	--berp-radius-lg: 12px;
+	--berp-radius-xl: 16px;
+	--berp-radius-2xl: 24px;
+	--berp-radius-full: 9999px;
+	// CI-001 §13 role aliases
+	--berp-radius-control: var(--berp-radius-md);   // button, input
+	--berp-radius-card: var(--berp-radius-lg);
+	--berp-radius-modal: var(--berp-radius-xl);
+
+	// ── DS-001 §14 spacing, 4px base with 8pt rhythm ───────────────────────
+	--berp-space-0: 0;
+	--berp-space-1: 4px;
+	--berp-space-2: 8px;
+	--berp-space-3: 12px;
+	--berp-space-4: 16px;
+	--berp-space-5: 20px;
+	--berp-space-6: 24px;
+	--berp-space-8: 32px;
+	--berp-space-10: 40px;
+	--berp-space-12: 48px;
+	--berp-space-16: 64px;
+	--berp-space-20: 80px;
+	--berp-space-24: 96px;
+
+	// ── DS-001 §12 typography ──────────────────────────────────────────────
+	// Latin -> Inter (already bundled and self-hosted by Frappe's desk bundle,
+	// so no external font host is introduced). Lao -> Noto Sans Lao per the
+	// CI-001 §10 fallback contract. The PRINT/PDF font contract is governed by
+	// the separate bERP font ADR and is deliberately NOT redefined here.
+	// Latin -> Inter (bundled by Frappe). Lao -> Phetsarath, the approved bERP
+	// Lao family per AGENTS.md §3.6, with Noto Sans Lao as CI-001 §10's named
+	// fallback. Both Lao faces are self-hosted — see foundations/_fonts.scss for
+	// why that departs from ADR-003.
+	//
+	// Order matters: Inter first so Latin keeps its metrics, then the Lao faces,
+	// which carry no Latin glyphs of consequence and so only claim the Lao range.
+	// CI-001 §10: Latin -> Inter; Lao -> approved bERP Lao UI family; fallback ->
+	// Noto Sans Lao. AGENTS.md §3.6 names the approved family as Phetsarath OT.
+	// Ruled 2026-09-20: Phetsarath first, matching §10 read literally.
+	//
+	// CONTRIBUTION SLOT (ADR-028). A Country Pack extends the Lao coverage of this
+	// stack by setting --berp-font-lao-stack ONLY. It must not redeclare
+	// --font-stack or --berp-font-ui: a token is declared by exactly one app, and
+	// scoping belongs in a token's name, never in selector specificity.
+	//
+	// Measured cause, 2026-09-20: berp_lao declared --font-stack under
+	// html[lang="lo"] (0,1,1), which beats this layer's :root (0,1,0) whatever the
+	// load order -- berp_branding already loads last and still lost. The value it
+	// won with was a verbatim copy of Frappe's espresso stack, so on every Lao
+	// tenant the product's typeface silently reverted to upstream's.
+	//
+	// The default below is complete on its own: a site with no Country Pack still
+	// renders Lao correctly. Font fallback is per glyph, so Latin resolves in Inter
+	// and Lao falls through to the families below it, which are the only ones
+	// covering the block.
+	// The slot is READ here with a complete default and is deliberately NOT
+	// declared. Both apps declare at :root, i.e. (0,1,0), so a declaration here
+	// would be resolved by source order — and berp_branding loads LAST in
+	// app_include_css, so its default would overwrite the Country Pack's
+	// contribution every time. A var() fallback inverts that: the token exists
+	// only if a contributor sets it, and the default applies otherwise. This is
+	// the whole mechanism; declaring the slot here would silently disable it.
+	--berp-font-ui: Inter, var(--berp-font-lao, Phetsarath, "Noto Sans Lao"),
+		system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--berp-font-mono: "SF Mono", SFMono-Regular, ui-monospace, "Cascadia Mono",
+		Menlo, Consolas, monospace;
+
+	--berp-text-display: 40px;   --berp-leading-display: 48px;
+	--berp-text-h1: 32px;        --berp-leading-h1: 40px;
+	--berp-text-h2: 24px;        --berp-leading-h2: 32px;
+	--berp-text-h3: 20px;        --berp-leading-h3: 28px;
+	--berp-text-h4: 18px;        --berp-leading-h4: 26px;
+	--berp-text-body-lg: 16px;   --berp-leading-body-lg: 24px;
+	--berp-text-body: 14px;      --berp-leading-body: 22px;   // default ERP UI
+	--berp-text-body-sm: 13px;   --berp-leading-body-sm: 20px;
+	--berp-text-caption: 12px;   --berp-leading-caption: 18px;
+	--berp-text-micro: 11px;     --berp-leading-micro: 16px;
+
+	// CI-001 §10 weight hierarchy
+	--berp-weight-regular: 400;
+	--berp-weight-medium: 500;
+	--berp-weight-semibold: 600;
+	--berp-weight-bold: 700;
+
+	// ── DS-001 §17 border and focus ────────────────────────────────────────
+	--berp-border-width: 1px;
+	--berp-border-width-strong: 2px;
+	--berp-focus-width: 2px;
+	--berp-focus-offset: 2px;
+
+	// ── Icon brand filter (Tier 2, Stage 3) ───────────────────────────────
+	// ERPNext ships its desktop icons as a solid #0289F7 plate with a white
+	// glyph. The colour is inside the artwork, so no token reaches it, and
+	// forking 64 SVGs would be vendoring a modified upstream asset — which
+	// DS-001A §B4 prohibits outright. A filter reaches all of them, and any
+	// icon upstream adds later is themed automatically.
+	//
+	// SOLVED BY MEASUREMENT, not chosen by eye. Each candidate was rendered to
+	// a canvas and the plate pixel sampled; this chain minimises RGB distance
+	// to CI-001 Teal 500 while leaving the glyph untouched:
+	//
+	//   #0289F7 plate  ->  #1AA07F   (Teal 500 is #17997F; distance 7.6/441)
+	//   #FFFFFF glyph  ->  #FFFFFF   (drift 0 — hue-rotate cannot move white)
+	//   white on the result: 3.29:1, above the 3:1 WCAG 1.4.11 non-text floor.
+	//
+	// Applied ONLY to ERPNext's set. Frappe's greys are already neutral, and
+	// its #06B58B lands on #43AC3E at 2.91:1 under this chain — below the
+	// non-text floor. Filtering everything would have shipped that regression.
+	//
+	// This is a stopgap that removes a competing brand blue. The real answer is
+	// a bERP icon set, which is a designer deliverable.
+	--berp-icon-brand-filter: hue-rotate(-46deg) saturate(80%) brightness(101%);
+
+	// ── DS-001 §19 motion. Honour prefers-reduced-motion at the use site. ──
+	--berp-motion-instant: 50ms;
+	--berp-motion-fast: 120ms;
+	--berp-motion-normal: 200ms;
+	--berp-motion-slow: 320ms;
+}
+
+// ── DS-001 §16 density model — Compact ───────────────────────────────────────
+// Opt-in, per §16's "Tables -> Compact available / Accounting -> Compact
+// available". Set data-berp-density="compact" on <html> or any container.
+// Only the five governed contracts change; nothing else is re-specified.
+[data-berp-density="compact"] {
+	--berp-control-height: 32px;
+	--berp-control-height-lg: 40px;
+	--berp-row-height: 36px;
+	--berp-nav-item-height: 36px;
+	--berp-card-padding: 16px;
+}
+
+// Reduced motion: DS-001 §19 requires animations degrade safely.
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--berp-motion-instant: 0ms;
+		--berp-motion-fast: 0ms;
+		--berp-motion-normal: 0ms;
+		--berp-motion-slow: 0ms;
+	}
+}

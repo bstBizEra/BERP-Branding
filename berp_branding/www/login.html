@@ -18,7 +18,7 @@
 
 {% block head_include %}
 {{ super() }}
-<link rel="stylesheet" href="/assets/berp_branding/css/berp_auth.css">
+{{ include_style("berp_auth.bundle.css") }}
 {% endblock %}
 
 {% block content %}

@@ -10,7 +10,8 @@ app_license = "GNU General Public License (v3)"
 required_apps = ["frappe/erpnext"]
 
 # ─── No app_logo_url hook, on purpose ─────────────────────────────────────────
-# Verified against Frappe v15 on a bench (navbar_settings.get_app_logo):
+# Frappe v16, navbar_settings.get_app_logo() — read from the running source, not
+# recalled:
 #
 #     app_logo = Website Settings.app_logo or Navbar Settings.app_logo
 #     if not app_logo:
@@ -19,20 +20,50 @@ required_apps = ["frappe/erpnext"]
 #         if len(logos) == 2:
 #             app_logo = logos[1]
 #
-# So the hook is not a dependable place to put the logo. On the shape bERP actually
-# ships — frappe + erpnext + berp_branding — there are three logos and `logos[0]` is
-# Frappe's own, so the hook never wins. Only the accidental two-app case would select
-# ours. A branding app cannot rest on a rule that depends on how many *other* apps
-# happen to declare the same hook.
+# The hook branch is correct only at a list length of exactly two, which no app
+# can guarantee, because the length depends on how many OTHER apps declare the
+# same hook. Measured on dev.berp.bizera.la 2026-09-19:
 #
-# NOTE (changed when the app began shipping public/images/): the original reason for
-# omitting this hook was that it would have served an asset that did not exist. That
-# reason is gone — the asset now exists. The hook stays absent on the surviving
-# reason above, which is positional unreliability, not a missing file. Test B9 in
+#     get_hooks("app_logo_url") -> ['/assets/frappe/images/frappe-framework-logo.svg',
+#                                   '/assets/erpnext/images/erpnext-logo.svg']
+#     len == 2  ->  resolver picks logos[1]  ->  the ERPNEXT logo.
+#
+# Declaring the hook here would make that list three long, `len(logos) == 2`
+# would be false, and the resolver would fall back to logos[0] — FRAPPE's logo.
+# So the hook is not merely unreliable; on the exact shape bERP ships, adding it
+# makes the fallback strictly worse.
+#
+# NOTE (changed when the app began shipping public/images/): the original reason
+# for omitting this hook was that it would have served an asset that did not
+# exist. That reason is gone — the asset now exists. The hook stays absent on the
+# surviving reason above, which is positional unreliability. Test B9 in
 # scripts/check_branding.py guards the absence.
 #
-# Branding is written to Website Settings instead, which get_app_logo() checks
-# first and which therefore always wins. See brand.apply_branding.
+# Branding is written to Website Settings AND Navbar Settings instead. Website
+# Settings is what get_app_logo() checks first. Navbar Settings is needed
+# separately because desk/page/desktop/desktop.py reads ONLY Navbar Settings and
+# then falls back to frappe's own hook — it never consults Website Settings, so
+# without this the legacy /desk page renders the Frappe logo. See brand.py.
+
+# ─── Desk theme ───────────────────────────────────────────────────────────────
+# A real bundle, not a raw /assets/ path. `bundled_asset()` passes a raw path
+# straight through with no content hash and no cache-busting query, so a browser
+# that cached it keeps serving the stale file after a deploy — which cost most of
+# a session once already. A *.bundle.scss is compiled by `bench build` into a
+# content-hashed file registered in assets.json. BERP-DS-001A §B5.2.
+#
+# This entry appends to the END of the aggregated app_include_css list, after
+# frappe's and erpnext's, because berp_branding installs last. That source-order
+# position is what lets the theme win at equal specificity with no !important.
+app_include_css = "berp_desk.bundle.css"
+
+# The <meta name="theme-color"> tags in frappe/www/desk.html are hardcoded to
+# Frappe blue and no stylesheet can reach a <meta>. desk.html also carries zero
+# {% block %} tags, so a Tier 3 template extension has nothing to override and
+# copying it would be the vendoring §B4 prohibits. This bundle is the lowest
+# remaining instrument; it hardcodes no colour, reading the value back from the
+# token layer instead. See public/js/berp_brand.bundle.js.
+app_include_js = "berp_brand.bundle.js"
 
 # ─── Portal and Desk context ──────────────────────────────────────────────────
 update_website_context = "berp_branding.brand.update_website_context"
