@@ -1,0 +1,246 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// bERP Desk components — Tier 2 (scoped selector override).
+// BERP-DS-001A §B2, Stage 3. Imported by berp_desk.bundle.scss.
+//
+// Tier 1 changes tokens. This file changes the things no token can reach: the
+// measured literal tail of DS-001A §A5. Every rule here states which surface it
+// targets and why a token could not do the job.
+//
+// Rules for this file (§B2):
+//   - measure the competing specificity before writing; match depth, don't escalate
+//   - no !important without a live test showing a four-class override lost
+//   - every rule scoped or inventoried, so an upstream class rename is findable
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── Module icons ────────────────────────────────────────────────────────────
+// ERPNext's desktop icons carry a solid #0289F7 plate inside the artwork, which
+// is the most visually dominant thing on the Desk and reads as a competing
+// brand accent in a teal product. See --berp-icon-brand-filter for the
+// measurement behind the value.
+//
+// The selector keys on the SRC PATH rather than a class, deliberately:
+//   - it cannot touch berp_branding's own marks, which are already correct and
+//     would be wrecked by a hue rotation
+//   - it survives an upstream class rename, because the asset path is the
+//     contract, not the styling hook
+//   - it scopes to ERPNext's set alone, leaving Frappe's neutral greys as they
+//     are (and avoiding the #06B58B -> #43AC3E contrast regression)
+//
+// Specificity 0,1,1. Nothing upstream sets `filter` on these, so no escalation
+// and no !important is needed.
+img[src*="/erpnext/icons/desktop_icons/"] {
+	filter: var(--berp-icon-brand-filter);
+}
+
+// A filter is a paint-time effect. Anything that depends on the icon's real
+// colours — a print stylesheet, a high-contrast mode — should opt out here
+// rather than have the filter silently follow it.
+@media print {
+	img[src*="/erpnext/icons/desktop_icons/"] {
+		filter: none;
+	}
+}
+
+// ── Density defaults per surface (DS-001 §16) ───────────────────────────────
+// §16 defines two modes and says which surfaces get which:
+//
+//     Forms -> Comfortable        Tables -> Compact available
+//     Dashboard -> Comfortable    Accounting -> Compact available
+//     Mobile -> Comfortable
+//
+// "Compact available" is not "Compact by default", so applying Comfortable
+// everywhere is the literal reading. Ruled 2026-09-20: Compact is the DEFAULT
+// for the record-listing surfaces, Comfortable stays the default everywhere
+// else. What that does and does not achieve is recorded below, because the
+// original justification for it was wrong.
+//
+// ── CORRECTION: --list-row-height does NOT size Frappe's data rows ─────────
+// This change was first argued as "44px rows cost roughly a third of the
+// visible rows in a list view". That claim was false and it should never have
+// been made: it came from measuring `.list-row-container, .list-row`, whose
+// FIRST match is the header row, and inferring the data rows from it without
+// ever measuring one.
+//
+// Measured properly — a data row's height while sweeping the variable live:
+//
+//     --list-row-height:  30px -> 55px    44px -> 55px
+//                         36px -> 55px    60px -> 55px
+//
+// Frappe's data rows are content-sized: the inner .list-row computes 55px with
+// no padding and min-height:auto, and ignores the property entirely. The
+// variable drives the HEADER row and nothing else.
+//
+// So this block does deliver a real density change in list views — the header,
+// the toolbar buttons and the filter inputs all drop to the Compact contract —
+// but it does NOT increase the number of records on screen, and nothing here
+// should be described as if it does. Densifying data rows is separate work
+// against content and line-height, not a token.
+//
+// ── THE TRAP THIS MIXIN EXISTS FOR ─────────────────────────────────────────
+// The first version of this rule set only the --berp-* tokens on the container
+// and expected Frappe's --list-row-height to follow, on the reasoning that
+// "var() resolves at the point of use". That is TRUE for a var() inside a
+// normal property (`height: var(--x)`) and FALSE for a var() inside another
+// CUSTOM PROPERTY's value, which resolves at the element where it is DECLARED.
+//
+//     :root { --list-row-height: var(--berp-row-height); }   <- computes to 44px
+//                                                               AT :root, and it
+//                                                               is that computed
+//                                                               44px that inherits
+//
+// Measured: --berp-row-height was 36px on the container while --list-row-height
+// was still 44px two elements down, and rows rendered at 44. Any element-scoped
+// density change must therefore RE-SUBSTITUTE the consuming properties at the
+// same element. That is the whole job of this mixin, and it is why the density
+// switch is not simply a token swap.
+@mixin berp-compact-density {
+	--berp-control-height: 32px;
+	--berp-control-height-lg: 40px;
+	--berp-row-height: 36px;
+	--berp-nav-item-height: 36px;
+	--berp-card-padding: 16px;
+
+	// Re-substituted here, not inherited — see above.
+	--btn-height: var(--berp-control-height);
+	--input-height: var(--berp-control-height);
+	--list-row-height: var(--berp-row-height);
+}
+
+// Frappe routes list, report and kanban all under a `List/` page route, so one
+// prefix match covers the three; `Report/` catches standalone query reports.
+.page-container[data-page-route^="List/"],
+.page-container[data-page-route^="Report/"] {
+	@include berp-compact-density;
+}
+
+// The explicit opt-in from DS-001A §D2 — `data-berp-density="compact"` on <html>
+// or any container. foundations/_dimensions.scss sets the bERP tokens for it;
+// this adds the Frappe-facing re-substitution that makes them take effect.
+[data-berp-density="compact"] {
+	@include berp-compact-density;
+}
+
+// ── Left navigation — CI-001 §19 ────────────────────────────────────────────
+// The spec, verbatim:
+//
+//     Selected item:
+//       * Teal 50/100 background
+//       * Teal 700 icon/text
+//       * Optional 3 px teal indicator
+//     Do not use a large solid-green sidebar as the default bERP interface.
+//
+// The background is Tier 1 (--sidebar-active-color, fixed in the token bundle).
+// The icon/text colour and the indicator have no upstream variable, so they are
+// Tier 2 — these rules and nothing more. The sidebar SURFACE is deliberately
+// left alone: §19's last line rules out a solid teal panel, and upstream's
+// neutral sidebar already satisfies it.
+//
+// MEASURED, both themes:
+//   light  Teal 700 #117461 on Teal 50  #ECF7F5   5.19:1  PASS  (§19 literal)
+//   dark   Teal 200 #B5DED6 on Teal 900 #0C5042   6.42:1  PASS  (derived —
+//          §19's Teal 700 measures 1.7:1 on the dark chip and is unusable)
+//
+// THE INDICATOR IS NOT OPTIONAL HERE, and the reason is measurable. On the
+// light sidebar (#F8F8F8) a Teal 50 chip is a very low-contrast surface — it
+// reads as selected mainly through the text colour. The 3px bar restores a
+// non-colour-dependent cue, which also satisfies "never communicate state by
+// colour alone" (CI-001 §8). It is drawn as an inset shadow rather than a
+// border so it follows upstream's 8px radius and adds no layout width.
+.body-sidebar .standard-sidebar-item.active-sidebar,
+.standard-sidebar .standard-sidebar-item.active-sidebar {
+	// Upstream sets box-shadow: var(--shadow-sm) here; keep it and add the bar.
+	box-shadow: inset 3px 0 0 0 var(--berp-nav-indicator), var(--shadow-sm);
+}
+
+// Label and icon. Depth is matched to upstream's own label rule rather than
+// escalated — the label was computing var(--text-muted), so a single extra
+// class is enough to win without !important.
+.body-sidebar .standard-sidebar-item.active-sidebar .sidebar-item-label,
+.body-sidebar .standard-sidebar-item.active-sidebar a,
+.standard-sidebar .standard-sidebar-item.active-sidebar .sidebar-item-label,
+.standard-sidebar .standard-sidebar-item.active-sidebar a {
+	color: var(--berp-nav-selected-fg);
+	font-weight: var(--berp-weight-medium);
+}
+
+.body-sidebar .standard-sidebar-item.active-sidebar svg,
+.standard-sidebar .standard-sidebar-item.active-sidebar svg {
+	// Frappe's desk icons paint through --icon-stroke / --icon-fill rather than
+	// currentColor, so both are retargeted for the selected row only.
+	--icon-stroke: var(--berp-nav-selected-fg);
+	color: var(--berp-nav-selected-fg);
+}
+
+// ---------------------------------------------------------------------------
+// Container spacing — DS-001 §14 / §16, ruling R2. NOT applied to Frappe's
+// widgets. Withdrawn 2026-09-21 after measuring what it actually reached.
+//
+// R2 ruled: adopt the 4px grid for CONTAINER spacing, leave control padding
+// upstream. I implemented that as
+//
+//     .widget, .card-body { padding: var(--berp-card-padding); }   // 0,1,0
+//
+// which ties upstream's `.widget { padding: 7px }` and wins on source order.
+// Measured on the bench, that is the wrong instrument, for a reason the
+// cascade shows and a screenshot would have shown more slowly:
+//
+// Upstream tunes padding PER WIDGET VARIANT, at 0,2,0, which outranks us:
+//
+//     .widget.number-widget-box      padding: 12px        <- keeps its own
+//     .widget.links-widget-box       padding: 10px 12px   <- keeps its own
+//     .widget.onboarding-widget-box  padding: 0 15px 30px <- keeps its own
+//     .widget.edit-mode              padding: 7px 12px    <- keeps its own
+//     .widget.shortcut-widget-box    (none)               <- would take 24px
+//     .widget.dashboard-widget-box   (none)               <- would take 24px
+//     .widget.quick-list-widget-box  (none)               <- would take 24px
+//
+// So the rule did not move "cards" to 24px. It moved SOME of them, leaving a
+// number card at 12px beside a shortcut tile at 24px on the same workspace
+// row. Inconsistent padding across one row is worse than either value applied
+// uniformly, and it is not what §16 asks for.
+//
+// `.card-body` went with it: one rule in the built bundle, and its templates
+// are the auth pages — which berp_branding already styles under its own
+// `.berp-auth` scope — plus the kanban card. Neither is a bERP card.
+//
+// The reading that survives: §16's "card internal spacing" governs bERP's OWN
+// card components. Frappe's workspace widgets are a different component with a
+// deliberate scale of their own, and overriding it selectively is not adopting
+// a grid, it is breaking one. --berp-card-padding stays published in the token
+// layer (24 Comfortable / 16 Compact) for the first bERP card that needs it.
+//
+// This is a correction to work that shipped, not a re-litigation of R2: the
+// ruling stands, the instrument was wrong.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Placeholder contrast — ruling R1 (2026-09-20), Tier 2 because Tier 1 cannot
+// reach it.
+//
+// The obvious instrument was --placeholder-color. Measured in the built desk
+// bundle it has **zero references** — it is declared (light var(--gray-50),
+// dark var(--gray-700)) and consumed by nothing. It is the fourth token in this
+// workstream whose name promised more than its usage, after --brand-color,
+// --sidebar-active-color and Frappe's unused teal ramp. It is retargeted in the
+// token layer anyway, harmlessly, in case upstream ever wires it.
+//
+// What actually paints a placeholder, measured:
+//     .form-control::placeholder { color: var(--gray-500); opacity: 1 }
+// --gray-500 is #999999, an espresso PRIMITIVE. B1.1 forbids redeclaring a
+// primitive — doing so would recolour every neutral keyed to gray-500 across
+// both apps — so the only correct instrument is this selector.
+//
+// Contrast, measured against the surface a placeholder actually sits on
+// (--control-bg resolves to --berp-surface-subtle, NOT the page):
+//     light  #66686B on neutral.100 #ECEDEE = 4.77:1   (was #999999 = 2.59:1)
+//     dark   #B1B3B6 on neutral.700 #414142 = 4.85:1
+// WCAG 1.4.3 exempts disabled controls; a placeholder in an ACTIVE input is not
+// exempt and needs 4.5:1.
+//
+// Specificity: upstream `.form-control::placeholder` is 0,1,1. Ours matches at
+// 0,1,1 and wins on source order — no !important (B2.2).
+// ---------------------------------------------------------------------------
+.form-control::placeholder {
+	color: var(--berp-text-tertiary);
+	opacity: 1;
+}

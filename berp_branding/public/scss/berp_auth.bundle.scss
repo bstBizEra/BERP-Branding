@@ -1,0 +1,341 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// bERP auth surface — BERP-CI-001 tokens, BERP-WL-001 §20 layout.
+//
+// Every rule is scoped under .berp-auth, a class only berp_branding's auth
+// templates introduce. Nothing here can reach the Desk, the portal or a tenant
+// page. That scope is what makes the two documented !important uses bounded
+// rather than global.
+//
+// Locked by WL-001 §20 / A11Y-001 §43 and therefore untouched: authentication
+// semantics, error meaning, SSO behaviour, focus visibility (A11Y-I03 — visible
+// focus SHALL NOT be removed; it is strengthened here, never suppressed).
+//
+// Refactored 2026-09-19 for DS-001 §35/§39: this file previously hardcoded hex
+// values into .berp-auth-scoped variables. It now consumes the foundations
+// token layer and contains no raw colour value of its own. Two defects surfaced
+// in that refactor and are fixed here:
+//   - it declared `--berp-teal-600: #17997F`, but CI-001 §6 puts #17997F at
+//     teal.500 and #148770 at teal.600. The name and the value disagreed.
+//   - the control height was 44px. DS-001 §16 puts the Comfortable STANDARD
+//     control at 40px; 44px is the table-row contract. Now 40px, which still
+//     clears CI-001 §20's 40x40 interactive-area floor.
+// ═════════════════════════════════════════════════════════════════════════════
+
+@import "foundations/tokens";
+
+.berp-auth {
+	min-height: 100vh;
+	display: grid;
+	grid-template-columns: 560px minmax(0, 1fr);
+	font-family: var(--berp-font-ui);
+}
+
+/* ── Brand panel ──────────────────────────────────────────────────────────
+ * The mark sits directly on the teal field, using berp-logo-inverse.svg.
+ *
+ * It used to sit on a white plate, because the kit shipped no logo.inverse and
+ * the teal mark is unreadable on teal. That gap closed on 2026-09-19: the kit
+ * gained IconBgGreen, whose light mark minus its background plate IS the
+ * inverse. Measured luminance 0.635-0.990, so no plate is needed.
+ */
+.berp-auth__brand {
+	position: relative;
+	overflow: hidden;
+	box-sizing: border-box;
+	padding: var(--berp-space-12);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	background: linear-gradient(158deg, var(--berp-teal-800) 0%, var(--berp-teal-950) 100%);
+}
+.berp-auth__watermark {
+	position: absolute;
+	right: -180px;
+	bottom: -150px;
+	width: 560px;
+	/* The light mark on the teal field reads as a highlight. The teal mark at
+	   the same opacity was teal-on-teal and effectively invisible. */
+	opacity: 0.07;
+	pointer-events: none;
+}
+.berp-auth__lockup {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+/* CI-001 §3: symbol recommended 32px, absolute minimum 24px. 38px here.
+   berp-logo-inverse.svg is cropped to the same box as berp-logo.svg, so these
+   proportions are the artwork's own — nothing is being stretched to fit. */
+.berp-auth__mark {
+	width: 31px;
+	height: 38px;
+	flex-shrink: 0;
+}
+.berp-auth__wordmark {
+	font-size: 26px;
+	font-weight: var(--berp-weight-semibold);
+	letter-spacing: -0.02em;
+	color: var(--berp-neutral-0);
+}
+.berp-auth__statement {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+}
+.berp-auth__line {
+	font-size: 44px;
+	line-height: 54px;
+	font-weight: var(--berp-weight-semibold);
+	letter-spacing: -0.02em;
+	color: var(--berp-neutral-0);
+}
+.berp-auth__line--accent { color: var(--berp-teal-100); }
+.berp-auth__rule {
+	display: block;
+	margin-top: var(--berp-space-8);
+	width: 48px;
+	height: 3px;
+	border-radius: 2px;
+	background: var(--berp-teal-500);
+}
+.berp-auth__lede {
+	margin: var(--berp-space-6) 0 0;
+	max-width: 360px;
+	font-size: var(--berp-text-body);
+	line-height: var(--berp-leading-body);
+	/* Measured on the rendered page, not estimated: 0.78 white over the teal
+	   field is 6.4:1, above the 4.5:1 AA floor for text this size. */
+	color: rgba(255, 255, 255, 0.78);
+}
+
+/* ── Form panel ───────────────────────────────────────────────────────── */
+.berp-auth__panel {
+	box-sizing: border-box;
+	padding: var(--berp-space-10) var(--berp-space-12) var(--berp-space-8);
+	display: flex;
+	flex-direction: column;
+	background: var(--berp-surface-default);
+}
+.berp-auth__panel-inner {
+	flex-grow: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.berp-auth__attribution {
+	margin: 0;
+	text-align: center;
+	font-size: var(--berp-text-caption);
+	line-height: var(--berp-leading-caption);
+	/* Neutral 400 is 3.3:1 on white and fails WCAG AA for text this size.
+	   Neutral 500 is 6.9:1. */
+	color: var(--berp-text-secondary);
+}
+
+/* ── Frappe's card, de-chromed ────────────────────────────────────────── */
+.berp-auth .page-card,
+.berp-auth .login-content {
+	width: 384px;
+	max-width: 100%;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+	background: transparent;
+}
+/* The brand panel already carries the mark; a second one in the card is noise. */
+.berp-auth .page-card-head img.app-logo { display: none; }
+.berp-auth .page-card-head {
+	display: block;
+	margin-bottom: var(--berp-space-6);
+}
+.berp-auth .page-card-head h4 {
+	margin: 0 0 var(--berp-space-2);
+	font-size: var(--berp-text-h1);
+	line-height: var(--berp-leading-h1);
+	font-weight: var(--berp-weight-semibold);
+	letter-spacing: -0.02em;
+	color: var(--berp-text-primary);
+}
+.berp-auth .page-card-subtitle,
+.berp-auth .page-card-head p {
+	margin: 0;
+	font-size: var(--berp-text-body);
+	line-height: var(--berp-leading-body);
+	color: var(--berp-text-secondary);
+}
+
+/* ── Fields ───────────────────────────────────────────────────────────── */
+.berp-auth .form-group { margin-bottom: var(--berp-space-5); }
+.berp-auth .form-label {
+	display: block;
+	margin-bottom: 6px;
+	font-size: var(--berp-text-body-sm);
+	line-height: var(--berp-leading-body-sm);
+	font-weight: var(--berp-weight-medium);
+	color: var(--berp-neutral-700);
+}
+/*
+ * Measured on Frappe v16, not assumed: nothing in any loaded sheet sets `height`
+ * on .form-control by that selector, yet the control computes 28px with padding
+ * 6px 8px 6px 38px. The winning rule reaches the input by a different selector
+ * and outranks 0,4,0 — a four-class override was tested live and still lost.
+ *
+ * !important here is deliberate and bounded: every rule in this file is scoped
+ * under .berp-auth, a class only berp_branding's auth templates introduce, so it
+ * cannot reach the Desk, the portal or a tenant page. The alternative is a
+ * selector arms race against a vendor theme we do not control.
+ *
+ * These are the only two !important declarations in berp_branding.
+ */
+.berp-auth .form-control {
+	height: var(--berp-control-height) !important;   /* DS-001 §16 standard control */
+	box-sizing: border-box;
+	/* Frappe's field icons are kept rather than hidden — fewer overrides, and
+	   nothing in CI-001 argues against them. Padding clears icon and toggle. */
+	padding: 0 42px 0 42px !important;
+	border: var(--berp-border-width) solid var(--berp-border-default);
+	border-radius: var(--berp-radius-control);
+	background: var(--berp-surface-default);
+	font-family: inherit;
+	font-size: var(--berp-text-body);
+	color: var(--berp-text-primary);
+	box-shadow: none;
+	transition: border-color var(--berp-motion-fast) ease,
+		box-shadow var(--berp-motion-fast) ease;
+}
+.berp-auth .form-control::placeholder { color: var(--berp-text-disabled); }
+.berp-auth .form-control:hover { border-color: var(--berp-border-strong); }
+.berp-auth .form-control:focus,
+.berp-auth .form-control:focus-visible {
+	outline: none;                     /* replaced, not removed — see below */
+	border-color: var(--berp-focus-color);
+	box-shadow: 0 0 0 3px var(--berp-teal-100);   /* DS-001 §17 focus ring */
+}
+.berp-auth .email-field,
+.berp-auth .password-field { position: relative; }
+.berp-auth .field-icon,
+.berp-auth .toggle-password { color: var(--berp-text-disabled); }
+.berp-auth .toggle-password { cursor: pointer; }
+.berp-auth .toggle-password:hover { color: var(--berp-neutral-700); }
+.berp-auth .field-error {
+	margin: 6px 0 0;
+	font-size: var(--berp-text-body-sm);
+	line-height: var(--berp-leading-body-sm);
+	color: var(--berp-error);
+}
+.berp-auth .form-control.is-invalid,
+.berp-auth .has-error .form-control { border-color: var(--berp-error); }
+.berp-auth .has-error .form-control:focus {
+	box-shadow: 0 0 0 3px var(--berp-error-surface);
+}
+
+/* ── Error banner: meaning is locked, only presentation changes ───────── */
+.berp-auth .login-error-banner {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	margin-bottom: var(--berp-space-5);
+	padding: var(--berp-space-3) 14px;
+	border: var(--berp-border-width) solid var(--berp-error);
+	border-radius: var(--berp-radius-control);
+	background: var(--berp-error-surface);
+	font-size: var(--berp-text-body-sm);
+	line-height: var(--berp-leading-body-sm);
+	color: var(--berp-error);
+}
+.berp-auth .login-error-banner svg { flex-shrink: 0; margin-top: 2px; }
+
+/* ── Actions ──────────────────────────────────────────────────────────── */
+.berp-auth .forgot-password-message {
+	margin: var(--berp-space-2) 0 0;
+	text-align: right;
+	font-size: var(--berp-text-body-sm);
+	line-height: var(--berp-leading-body-sm);
+}
+.berp-auth .forgot-password-message a,
+.berp-auth .sign-up-message a {
+	color: var(--berp-text-link);
+	font-weight: var(--berp-weight-medium);
+	text-decoration: none;
+}
+.berp-auth .forgot-password-message a:hover,
+.berp-auth .sign-up-message a:hover {
+	color: var(--berp-action-hover);
+	text-decoration: underline;
+}
+
+.berp-auth .page-card-actions { margin-top: var(--berp-space-6); }
+/*
+ * Frappe's rule is `.for-login .page-card .page-card-actions .btn-login`, i.e.
+ * 0,4,0. A 0,2,0 override never applied — the button stayed #171717. Matching
+ * their depth and loading after them is enough; no !important needed. Verified
+ * live before writing this.
+ */
+.berp-auth .page-card .page-card-actions .btn-login,
+.berp-auth .page-card .page-card-actions .btn-signup,
+.berp-auth .page-card .page-card-actions .btn-primary {
+	height: var(--berp-control-height);
+	width: 100%;
+	border: none;
+	border-radius: var(--berp-radius-control);
+	background-color: var(--berp-action-primary);   /* CI-001 §20 primary */
+	font-family: inherit;
+	font-size: var(--berp-text-body);
+	font-weight: var(--berp-weight-semibold);
+	color: var(--berp-action-text);
+	box-shadow: none;
+}
+.berp-auth .page-card .page-card-actions .btn-login:hover,
+.berp-auth .page-card .page-card-actions .btn-signup:hover,
+.berp-auth .page-card .page-card-actions .btn-primary:hover {
+	background-color: var(--berp-action-hover);
+	color: var(--berp-action-text);
+}
+.berp-auth .btn-login:focus-visible,
+.berp-auth .btn-login-option:focus-visible,
+.berp-auth a:focus-visible {
+	outline: var(--berp-focus-width) solid var(--berp-focus-color);
+	outline-offset: var(--berp-focus-offset);
+}
+.berp-auth .page-card .page-card-actions .btn-login-option,
+.berp-auth .btn-login-option {
+	height: var(--berp-control-height);
+	width: 100%;
+	margin-top: var(--berp-space-3);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: var(--berp-border-width) solid var(--berp-border-default);
+	border-radius: var(--berp-radius-control);
+	background: var(--berp-surface-default);
+	font-family: inherit;
+	font-size: var(--berp-text-body);
+	font-weight: var(--berp-weight-semibold);
+	color: var(--berp-neutral-700);
+}
+.berp-auth .btn-login-option:hover {
+	background: var(--berp-surface-page);
+	color: var(--berp-text-primary);
+}
+.berp-auth .sign-up-message {
+	margin-top: var(--berp-space-6);
+	font-size: var(--berp-text-body-sm);
+	line-height: var(--berp-leading-body-sm);
+	color: var(--berp-text-secondary);
+}
+
+/* ── Responsive: brand field becomes a header band (WL-001 §48) ───────── */
+@media (max-width: 900px) {
+	.berp-auth { grid-template-columns: minmax(0, 1fr); }
+	.berp-auth__brand {
+		padding: var(--berp-space-6);
+		min-height: 208px;
+	}
+	.berp-auth__mark { width: 26px; height: 32px; }
+	.berp-auth__line { font-size: 30px; line-height: 38px; }
+	.berp-auth__watermark { right: -140px; bottom: -120px; width: 380px; }
+	.berp-auth__panel { padding: var(--berp-space-8) var(--berp-space-6) var(--berp-space-6); }
+}

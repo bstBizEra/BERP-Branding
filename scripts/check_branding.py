@@ -341,6 +341,23 @@ class _Doc:
 		self.saved += 1
 
 
+class _Boot(dict):
+	"""
+	Stands in for the bootinfo object Frappe hands to a `boot_session` hook.
+
+	It must be BOTH a dict and attribute-accessible, because that is what
+	`frappe._dict` is and what `boot.py` itself relies on — the same function
+	does `bootinfo.app_data = []` and `bootinfo["lang"] = ...`. The stub used a
+	plain SimpleNamespace, which has no `.get()`, so correct product code that
+	read `bootinfo.get("app_data")` failed here and nowhere else.
+	"""
+
+	__getattr__ = dict.get
+
+	def __setattr__(self, key, value):
+		self[key] = value
+
+
 class _Logger:
 	def __init__(self):
 		self.messages: list[tuple[str, str]] = []
@@ -366,20 +383,46 @@ def install_frappe_stub() -> types.ModuleType:
 	frappe.local = types.SimpleNamespace(site="test.localhost")
 	frappe.flags = types.SimpleNamespace()
 	frappe._logger = _Logger()
-	frappe._single = _Doc()
+	# One doc PER DOCTYPE, not one shared doc.
+	#
+	# The stub used to return a single _Doc for every `get_single()` call. That
+	# was invisible while only Website Settings was written, and became a
+	# fabricated failure the moment brand.py also wrote Navbar Settings: the
+	# navbar write landed on the Website Settings doc and two unrelated force-
+	# semantics checks went red against correct product code. Modelled properly
+	# here so those checks measure what they claim to.
+	frappe._single = _Doc()  # Website Settings
+	frappe._singles: dict = {}  # every other Single, by doctype
+
+	def _get_single(doctype):
+		if doctype == "Website Settings":
+			return frappe._single
+		# Scenario setups reset state by REBINDING frappe._single. Treat that
+		# rebind as the scenario boundary and drop the other singles with it,
+		# or Navbar Settings state from one scenario leaks into the next and
+		# the force-semantics checks start measuring the previous scenario.
+		if frappe._singles.get("__anchor__") is not frappe._single:
+			frappe._singles.clear()
+			frappe._singles["__anchor__"] = frappe._single
+		return frappe._singles.setdefault(doctype, _Doc())
+
+	frappe.get_single = _get_single
 	frappe.cleared = 0
 
 	frappe._ = lambda s, *a, **k: s
 	frappe.whitelist = lambda *a, **k: lambda fn: fn
 	frappe.only_for = lambda *a, **k: None
 	frappe.logger = lambda *a, **k: frappe._logger
-	frappe.get_single = lambda doctype: frappe._single
 
 	def _clear_cache(*a, **k):
 		frappe.cleared += 1
 
 	frappe.clear_cache = _clear_cache
-	frappe.db = types.SimpleNamespace(get_single_value=lambda doctype, field: None)
+	# Backed by the same per-doctype store, so the Navbar Settings mirror in
+	# brand.py is actually exercised rather than always seeing None.
+	# Routed through _get_single so it sees the same doc brand.py writes, and so
+	# the Navbar Settings mirror is actually exercised rather than always None.
+	frappe.db = types.SimpleNamespace(get_single_value=lambda doctype, field: _get_single(doctype).get(field))
 
 	utils = types.ModuleType("frappe.utils")
 
@@ -656,14 +699,52 @@ def check_branding_logic(app_root: Path, package: str, hooks: dict) -> None:
 			)
 
 		frappe.conf = {"berp_brand_name": "LaoCap ERP"}
-		boot = types.SimpleNamespace()
+		# app_data as boot.py actually leaves it: frappe first, erpnext second,
+		# and apps that declare no app_logo_url holding a LIST rather than a URL.
+		boot = _Boot(
+			app_data=[
+				{"app_name": "frappe", "app_logo_url": "/assets/frappe/images/frappe-framework-logo.svg"},
+				{"app_name": "erpnext", "app_logo_url": "/assets/erpnext/images/erpnext-logo.svg"},
+				{"app_name": "berp_lao", "app_logo_url": ["/assets/frappe/images/frappe-framework-logo.svg"]},
+				{"app_name": "other_app", "app_logo_url": "/assets/other_app/images/their-logo.svg"},
+			]
+		)
 		branding.boot_session(boot)
 		check(
 			"C13",
 			"boot_session exposes the brand to Desk JavaScript",
-			getattr(boot, "berp_brand", {}).get("name") == "LaoCap ERP",
-			f"boot.berp_brand = {getattr(boot, 'berp_brand', None)!r}",
+			(boot.get("berp_brand") or {}).get("name") == "LaoCap ERP",
+			f"boot.berp_brand = {boot.get('berp_brand')!r}",
 			"frappe.boot.berp_brand.name",
+		)
+
+		# C18/C19 guard the Desk sidebar logo. sidebar_header.js renders
+		# frappe.boot.app_data[0].app_logo_url, which Website Settings never
+		# reaches — the Desk showed the Frappe logo while every other surface
+		# showed bERP until boot_session started rewriting this.
+		data = boot.get("app_data") or []
+		logos = [a.get("app_logo_url") for a in data]
+		check(
+			"C18",
+			"boot_session brands app_data[0], which drives the Desk sidebar",
+			bool(logos) and logos[0] == branding.PLATFORM_DEFAULTS["app_logo"],
+			f"app_data[0].app_logo_url = {logos[0] if logos else None!r} — the Desk renders this one",
+			"app_data[0] carries the bERP mark",
+		)
+		check(
+			"C19",
+			"No app_logo_url reaches the client as a list",
+			all(isinstance(v, str) for v in logos),
+			f"non-string logo(s): {[v for v in logos if not isinstance(v, str)]!r}"
+			" — boot.py returns the hook LIST when an app declares none, and the JS uses it as a URL",
+			f"{len(logos)} logo(s), all strings",
+		)
+		check(
+			"C20",
+			"An app that ships its own mark keeps it",
+			logos[-1] == "/assets/other_app/images/their-logo.svg",
+			f"third-party logo was overwritten with {logos[-1]!r}",
+			"only Frappe/ERPNext defaults are displaced",
 		)
 
 	except Exception as exc:
@@ -715,6 +796,14 @@ CI_PALETTE = {
 	"#8B8D90",
 	"#595A5C",
 	"#414142",
+	# Ruling D4 (2026-09-19): admitted as a sanctioned extension, not a stray.
+	# ROLE: the icon background plate in bERP_Logo_IconBgGreen.svg. It is a
+	# deliberate green distinct from the brand teal and is the ONLY off-ramp
+	# value in the kit with design intent behind it; the other five were export
+	# artefacts and were corrected to the ramp the same day.
+	# CONTRAST: 2.31:1 on white. Plate fill only — never text, never a border
+	# that carries meaning, never a focus indicator.
+	"#2EB990",
 	"#2F3031",
 	"#1F2021",
 }
@@ -926,8 +1015,13 @@ def check_palette(assets_root: Path | None) -> None:
 		stray = found - CI_PALETTE
 		if stray:
 			offenders[svg.name] = stray
+	# Severity raised WARN -> FAIL by ruling D4 (2026-09-19). A standing warning
+	# that nobody clears stops carrying information: the six values below sat in
+	# the kit for two days reported as a warning and nothing moved. Five are now
+	# corrected and #2EB990 is admitted above with a stated role, so the check has
+	# a clean baseline to defend — which is the only state in which FAIL is fair.
 	record(
-		WARN if offenders else PASS,
+		FAIL if offenders else PASS,
 		"D8",
 		"Artwork uses only CI-001 palette colours",
 		"; ".join(f"{n}: {', '.join(sorted(c))}" for n, c in offenders.items())
@@ -935,6 +1029,248 @@ def check_palette(assets_root: Path | None) -> None:
 		if offenders
 		else "all colours are documented",
 	)
+
+
+# ─── E. Desk theme contract (BERP-DS-001A Part I §B) ──────────────────────────
+# Stage 1 ships a Tier 1 token retarget. These checks enforce the parts of the
+# override contract a human reviewer reliably misses: a light block without its
+# dark twin, a Frappe primitive redeclared, a hex literal that crept back into a
+# governed file, and a contrast pair that was assumed rather than measured.
+#
+# E5 and E7 are the two that would have caught defects found during the DS-001A
+# inventory, which is why they exist.
+
+SCSS_DIR = "public/scss"
+PRIMITIVES_FILE = "foundations/_primitives.scss"
+DESK_BUNDLE = "berp_desk.bundle.scss"
+AUTH_BUNDLE = "berp_auth.bundle.scss"
+
+#: Frappe/espresso PRIMITIVE namespaces. Redeclaring any of these is a contract
+#: violation (§B1.1): they carry deliberate non-brand meaning and Frappe inverts
+#: its gray ramp in dark mode. `--berp-teal-500` does not match — the alternation
+#: is anchored immediately after the leading `--`.
+FRAPPE_PRIMITIVE_RE = re.compile(
+	r"^\s*--(?:gray|ink|surface|outline|black-overlay|white-overlay|"
+	r"blue|green|red|orange|amber|yellow|cyan|teal|violet|pink|purple)-[0-9a-z]+\s*:",
+	re.MULTILINE,
+)
+
+HEX_RE = re.compile(r"#[0-9A-Fa-f]{3,8}\b")
+DECL_RE = re.compile(r"^\s*(--[a-zA-Z0-9-]+)\s*:\s*([^;]+);", re.MULTILINE)
+
+
+def strip_scss_comments(text: str) -> str:
+	"""Remove // line comments and /* */ blocks so literals in prose don't count."""
+	text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+	return re.sub(r"^\s*//.*$", "", text, flags=re.MULTILINE)
+
+
+def _scss_files(app_root: Path, package: str) -> dict[str, Path]:
+	root = app_root / package / SCSS_DIR
+	if not root.is_dir():
+		return {}
+	return {str(p.relative_to(root)).replace("\\", "/"): p for p in sorted(root.rglob("*.scss"))}
+
+
+def _theme_blocks(text: str) -> dict[str, set[str]]:
+	"""Property names declared under the light selector and under the dark one."""
+	blocks: dict[str, set[str]] = {"light": set(), "dark": set()}
+	for match in re.finditer(r"(?P<sel>[^{}]+)\{(?P<body>[^{}]*)\}", text, re.DOTALL):
+		selector = match.group("sel")
+		if '[data-theme="dark"]' in selector:
+			key = "dark"
+		elif '[data-theme="light"]' in selector or re.search(r"(^|\s):root\s*,?\s*$", selector):
+			key = "light"
+		else:
+			continue
+		blocks[key] |= {m.group(1) for m in DECL_RE.finditer(match.group("body"))}
+	return blocks
+
+
+def check_desk_theme(app_root: Path, package: str | None, hooks: dict) -> None:
+	if not package:
+		record(SKIP, "E0", "Desk theme contract", "no package resolved")
+		return
+
+	files = _scss_files(app_root, package)
+	if not files:
+		record(SKIP, "E0", "Desk theme contract", f"no {SCSS_DIR}/ in the app")
+		return
+
+	# E1 — the Desk stylesheet is a real bundle, not a raw /assets/ path.
+	# A raw path gets no content hash and no cache-busting query, so a browser
+	# that cached it keeps serving the stale file after a deploy.
+	check(
+		"E1",
+		"The Desk stylesheet is a compiled bundle",
+		DESK_BUNDLE in files,
+		f"{SCSS_DIR}/{DESK_BUNDLE} not found — a raw /assets/ path has no cache busting (§B5.2)",
+		f"{SCSS_DIR}/{DESK_BUNDLE}",
+	)
+
+	# E2 — and it is actually declared, or it never loads.
+	declared = hooks.get("app_include_css")
+	declared_list = [declared] if isinstance(declared, str) else list(declared or [])
+	check(
+		"E2",
+		"app_include_css declares the Desk bundle",
+		any(d.endswith("berp_desk.bundle.css") for d in declared_list),
+		f"app_include_css = {declared!r} — the theme is built but never injected",
+		f"app_include_css = {declared_list}",
+	)
+
+	# E3 — every Frappe property the theme retargets resolves to a bERP token,
+	# never to a literal and never to a Frappe primitive (§B1.3).
+	offenders = []
+	if DESK_BUNDLE in files:
+		body = strip_scss_comments(files[DESK_BUNDLE].read_text(encoding="utf-8"))
+		for m in DECL_RE.finditer(body):
+			name, value = m.group(1), m.group(2).strip()
+			if name.startswith("--berp-"):
+				continue
+			if "var(--berp-" not in value:
+				offenders.append(f"{name}: {value}")
+	check(
+		"E3",
+		"Retargeted properties resolve to bERP tokens",
+		not offenders,
+		"; ".join(offenders[:6]) + " — Tier 1 must point at --berp-* (§B1.3)",
+		"every retarget references a --berp-* token",
+	)
+
+	# E4 — no Frappe primitive is redeclared anywhere in the app's SCSS (§B1.1).
+	prim_offenders = {}
+	for name, path in files.items():
+		hits = FRAPPE_PRIMITIVE_RE.findall(strip_scss_comments(path.read_text(encoding="utf-8")))
+		if hits:
+			prim_offenders[name] = sorted(set(hits))
+	check(
+		"E4",
+		"No Frappe primitive token is redeclared",
+		not prim_offenders,
+		"; ".join(f"{n}: {', '.join(v)}" for n, v in prim_offenders.items())
+		+ " — primitives carry non-brand meaning and invert in dark (§B1.1)",
+		f"{len(files)} SCSS file(s) redeclare only semantic properties",
+	)
+
+	# E5 — light and dark declare the SAME property set.
+	# A :root-only override does not leave dark unbranded; it forces the light
+	# values onto the dark theme and produces an unreadable surface (§A8).
+	parity_problems = []
+	for name in (DESK_BUNDLE, "foundations/_semantic.scss"):
+		if name not in files:
+			continue
+		blocks = _theme_blocks(strip_scss_comments(files[name].read_text(encoding="utf-8")))
+		missing = blocks["light"] - blocks["dark"]
+		extra = blocks["dark"] - blocks["light"]
+		if missing or extra:
+			bits = []
+			if missing:
+				bits.append(f"light-only: {', '.join(sorted(missing)[:5])}")
+			if extra:
+				bits.append(f"dark-only: {', '.join(sorted(extra)[:5])}")
+			parity_problems.append(f"{name} ({'; '.join(bits)})")
+	check(
+		"E5",
+		"Every light token has a dark counterpart",
+		not parity_problems,
+		"; ".join(parity_problems) + " — a :root-only override breaks dark mode (§B1.2)",
+		"light and dark declare matching property sets",
+	)
+
+	# E6 — !important only inside a bERP-owned scope, and within budget.
+	important = {}
+	for name, path in files.items():
+		body = strip_scss_comments(path.read_text(encoding="utf-8"))
+		count = body.count("!important")
+		if not count:
+			continue
+		scoped = ".berp-" in body
+		important[name] = (count, scoped)
+	unscoped = [n for n, (_, scoped) in important.items() if not scoped]
+	total = sum(c for c, _ in important.values())
+	check(
+		"E6",
+		"!important is scoped and within budget",
+		not unscoped and total <= IMPORTANT_BUDGET,
+		(f"unscoped in {', '.join(unscoped)}" if unscoped else f"{total} uses, budget {IMPORTANT_BUDGET}")
+		+ " — permitted only inside a .berp-* scope, each measured and commented (§B2.2)",
+		f"{total} use(s), all inside a .berp-* scope",
+	)
+
+	# E7 — raw colour values live in exactly one file (DS-001 §39).
+	hex_offenders = {}
+	for name, path in files.items():
+		if name == PRIMITIVES_FILE:
+			continue
+		hits = HEX_RE.findall(strip_scss_comments(path.read_text(encoding="utf-8")))
+		if hits:
+			hex_offenders[name] = sorted(set(hits))
+	check(
+		"E7",
+		"Raw colour values appear only in the primitives file",
+		not hex_offenders,
+		"; ".join(f"{n}: {', '.join(v)}" for n, v in hex_offenders.items())
+		+ f" — governed code references tokens; literals belong in {PRIMITIVES_FILE} (DS-001 §39)",
+		f"only {PRIMITIVES_FILE} carries literals",
+	)
+
+	# E8 — a custom property is never declared above (0,1,0) specificity (ADR-028).
+	#
+	# This is the check that would have caught the --font-stack collision. berp_lao
+	# declared it under `html[lang="lo"]` — (0,1,1) — which beats this app's `:root`
+	# (0,1,0) whatever the load order, so on every Lao tenant the product typeface
+	# silently reverted to a copy of Frappe's stack. Nothing errored and no test on
+	# either side could see it.
+	#
+	# The rule is symmetric: this app must not do to another layer what was done to
+	# it. Scoping belongs in a token's NAME (--berp-font-lao-stack), not in a
+	# selector. Permitted declaration sites are :root, [data-theme="…"] and the
+	# density attribute — each a single class/attribute, i.e. (0,1,0).
+	# Scope: the TOKEN LAYER only — foundations/* and the retarget blocks of the
+	# Desk bundle. _components.scss is deliberately exempt: Tier 2 exists to scope
+	# component appearance by selector (DS-001A §B2), and setting a component-local
+	# property such as --icon-stroke inside a sidebar rule is that mechanism working
+	# as designed, not a token declaration. The hazard this check exists for is a
+	# PUBLISHED token being declared somewhere another app's declaration cannot see.
+	ALLOWED_TOKEN_SELECTORS = (
+		":root",
+		'[data-theme="light"]',
+		'[data-theme="dark"]',
+		'[data-berp-density="compact"]',
+	)
+	over_specific = {}
+	for name, path in files.items():
+		if "foundations/" not in name and not name.endswith("berp_desk.bundle.scss"):
+			continue
+		selector = None
+		for raw in strip_scss_comments(path.read_text(encoding="utf-8")).splitlines():
+			line = raw.strip()
+			if line.endswith("{"):
+				head = line[:-1].strip().rstrip(",")
+				# at-rules (@media, @supports, @mixin) are not selectors; a nested
+				# selector follows and overwrites this, so ignore them outright.
+				selector = None if head.startswith("@") else head
+			elif line.startswith("}"):
+				selector = None
+			elif line.startswith("--") and ":" in line and selector:
+				parts = [p.strip() for p in selector.split(",") if p.strip()]
+				bad = [p for p in parts if p not in ALLOWED_TOKEN_SELECTORS]
+				if bad:
+					over_specific.setdefault(name, set()).update(bad)
+	graded = [n for n in files if "foundations/" in n or n.endswith("berp_desk.bundle.scss")]
+	check(
+		"E8",
+		"Token-layer properties are declared only at (0,1,0)",
+		not over_specific,
+		"; ".join(f"{n}: {', '.join(sorted(v))}" for n, v in over_specific.items())
+		+ " — a token declared on a more specific selector wins across apps "
+		+ "regardless of load order; scope by token name instead (ADR-028)",
+		f"{len(graded)} token-layer file(s) flat at :root/[data-theme]",
+	)
+
+
+IMPORTANT_BUDGET = 2
 
 
 # ─── Reporting ────────────────────────────────────────────────────────────────
@@ -989,6 +1325,7 @@ def main() -> int:
 		check_declared_assets(app_root, package, hooks)
 	check_svg_references(args.assets.resolve() if args.assets else None, app_root, package)
 	check_palette(args.assets.resolve() if args.assets else None)
+	check_desk_theme(app_root, package, hooks)
 
 	return report(args.quiet)
 

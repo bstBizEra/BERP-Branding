@@ -25,6 +25,12 @@ frappe = ">=15.0.0,<17.0.0"
 [tool.ruff]
 line-length = 110
 target-version = "py310"
+# scripts/recon/ holds one-off measurement probes. Their value is being fast to
+# write and honest about what they measured; several are deliberately terse
+# (`for k, v in x: print(...)` on one line) and none of them ship. Linting them
+# is churn against files that exist to be read once and re-run after an upstream
+# upgrade. The production surface — the app and the two real tools — is linted.
+exclude = ["scripts/recon"]
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "I", "UP", "B", "RUF"]

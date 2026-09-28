@@ -25,11 +25,20 @@ and login logo through `get_app_logo()`:
 
     Website Settings.app_logo  ->  Navbar Settings.app_logo  ->  hooks app_logo_url
 
-and the hook branch takes `logos[0]` unless exactly two apps declare it — with
-frappe, erpnext and this app installed there are three, so `logos[0]` is Frappe's
-own logo and the hook never wins. The login page reads
-`Website Settings.app_name` the same way. So the only dependable place to put
-tenant branding is **Website Settings**, which is what `apply_branding` writes.
+and the hook branch takes `logos[0]` unless exactly two apps declare it. Measured
+on Frappe v16 2026-09-19: with frappe and erpnext declaring it and this app
+declaring nothing, the list is two long and the fallback resolves to ERPNext's
+logo; declaring it here would make the list three and send the fallback to
+Frappe's. Either way the hook is not ours to win. The login page reads
+`Website Settings.app_name` the same way. So the dependable place to put tenant
+branding is **Website Settings**, which is what `apply_branding` writes.
+
+One surface does not read Website Settings at all. `desk/page/desktop/desktop.py`
+resolves its logo as Navbar Settings.app_logo, else
+`get_hooks("app_logo_url", app_name="frappe")[0]` — Frappe's own, unconditionally.
+So the legacy /desk page renders the Frappe logo however well Website Settings is
+configured. `apply_branding` therefore writes Navbar Settings too. See
+NAVBAR_LOGO_FIELD below.
 """
 
 from html import escape
@@ -78,6 +87,15 @@ PLATFORM_DEFAULTS = {
 #: uses for the Desk loading screen. Corrected here, with `berp_brand_banner`
 #: added for the portal banner it used to mean. Safe to change: no tenant has
 #: these keys set, they are still proposed values in the README.
+#: Navbar Settings.app_logo is written as a MIRROR of the resolved app_logo.
+#:
+#: Not because get_app_logo() needs it — that already prefers Website Settings —
+#: but because desk/page/desktop/desktop.py reads Navbar Settings and nothing
+#: else before falling back to Frappe's own hook. Measured on the dev bench:
+#: Navbar Settings.app_logo was None, so that page rendered the Frappe logo while
+#: every other surface showed bERP. Mirroring closes the last surface.
+NAVBAR_LOGO_FIELD = "app_logo"
+
 BRAND_FIELDS = {
 	"berp_brand_name": "app_name",
 	"berp_brand_logo": "app_logo",
@@ -210,7 +228,81 @@ def apply_branding(force: int = 0) -> dict:
 		frappe.clear_cache()
 		frappe.logger("berp_branding").info(f"berp_branding: applied branding {changed}")
 
+	navbar_changed = _apply_navbar_logo(wanted.get("app_logo"), force=force)
+	if navbar_changed:
+		changed["navbar_settings.app_logo"] = navbar_changed
+
+	icons_changed = _apply_desktop_icon_logos(wanted.get("app_logo"))
+	if icons_changed:
+		changed["desktop_icon.logo_url"] = icons_changed
+
 	return {"applied": changed, "configured": wanted, "site": frappe.local.site}
+
+
+def _apply_desktop_icon_logos(logo: str | None) -> list[str]:
+	"""
+	Put the bERP mark on the v16 Desktop's app tiles that still carry an upstream logo.
+
+	Installing an app writes a `Desktop Icon` record of type App with that app's
+	logo baked into `logo_url` (HRMS: "Frappe HR" + frappe-hr-logo.svg). The label
+	is already rebranded by the translation CSVs, because the Desktop renders it
+	through `__()`; the logo is data and needs this write. Only logos listed in
+	UPSTREAM_LOGOS are replaced, so an operator's own icon is never touched.
+
+	Returns the names of the icons changed. Absent on Frappe versions without
+	the Desktop Icon DocType; failure must not fail the whole apply.
+	"""
+	if not logo:
+		return []
+	try:
+		if not frappe.db.exists("DocType", "Desktop Icon"):
+			return []
+		names = frappe.get_all(
+			"Desktop Icon",
+			filters={"icon_type": "App", "logo_url": ["in", UPSTREAM_LOGOS]},
+			pluck="name",
+		)
+		for name in names:
+			frappe.db.set_value("Desktop Icon", name, "logo_url", logo)
+		if names:
+			frappe.clear_cache()
+		return names
+	except Exception as exc:  # pragma: no cover - defensive
+		frappe.logger("berp_branding").warning(f"berp_branding: could not rebrand desktop icons: {exc}")
+		return []
+
+
+def _apply_navbar_logo(logo: str | None, force: int = 0) -> str | None:
+	"""
+	Mirror the resolved logo into Navbar Settings.
+
+	The legacy /desk page reads this field and nothing else, so leaving it unset
+	means that one page keeps the Frappe logo. Same force semantics as the
+	Website Settings write: an operator's existing value is preserved unless
+	forced, and nothing is ever blanked.
+
+	Failure here must not fail the whole apply: Website Settings is the surface
+	that matters, and this is a secondary mirror.
+	"""
+	if not logo:
+		return None
+	try:
+		current = frappe.db.get_single_value("Navbar Settings", NAVBAR_LOGO_FIELD)
+		if current and not cint(force):
+			return None
+		if current == logo:
+			return None
+		navbar = frappe.get_single("Navbar Settings")
+		navbar.set(NAVBAR_LOGO_FIELD, logo)
+		navbar.flags.ignore_permissions = True
+		navbar.save()
+		frappe.clear_cache()
+		return logo
+	except Exception as exc:  # pragma: no cover - defensive
+		frappe.logger("berp_branding").warning(
+			f"berp_branding: could not mirror logo into Navbar Settings: {exc}"
+		)
+		return None
 
 
 def after_install():
@@ -245,10 +337,105 @@ def boot_session(bootinfo):
 	Expose the brand to Desk JavaScript.
 
 	Frappe fills `bootinfo.app_logo_url` from Website Settings before this runs,
-	so the logo is already correct once `apply_branding` has run. `berp_brand` is
-	added for client code that wants the label without re-deriving it.
+	so that value is already correct once `apply_branding` has run. `berp_brand`
+	is added for client code that wants the label without re-deriving it.
 	"""
 	bootinfo.berp_brand = {"name": brand_name(), "site": frappe.local.site}
+	_brand_boot_app_data(bootinfo)
+
+
+#: Logos that mean "no bERP identity here" and may be replaced.
+UPSTREAM_LOGOS = (
+	"/assets/frappe/images/frappe-framework-logo.svg",
+	"/assets/erpnext/images/erpnext-logo.svg",
+	"/assets/hrms/images/frappe-hr-logo.svg",
+)
+
+
+def _brand_boot_app_data(bootinfo) -> None:
+	"""
+	Put the bERP mark into the Desk chrome.
+
+	`bootinfo.app_logo_url` is NOT what the v16 Desk sidebar renders. Measured on
+	the bench: `sidebar_header.js` falls back to
+
+	    get_default_icon() { return frappe.boot.app_data[0].app_logo_url }
+
+	and `boot.py` builds each `app_data` entry as
+
+	    app_logo_url = <add_to_apps_screen logo>
+	                   or get_hooks("app_logo_url", app_name=<this app>)
+	                   or get_hooks("app_logo_url", app_name="frappe")
+
+	Index 0 is `frappe`, so the Desk rendered the FRAPPE logo while the login
+	page, the browser tab and the splash all showed bERP. A scan of the live Desk
+	found zero images from this app.
+
+	The third branch also returns a **list**, not a string — so any app that
+	declares no `app_logo_url` of its own ends up with `["/assets/frappe/..."]`
+	in a field the JavaScript uses directly as a URL. Both `berp_lao` and this
+	app were in that state.
+
+	Both are corrected here. `boot_session` runs after `boot.py` has assembled
+	`app_data`, so this is a normal published hook doing normal work — no
+	upstream file is touched and nothing depends on hook ordering between apps.
+
+	An app that ships a mark of its own keeps it; only Frappe's and ERPNext's
+	logos and the unconfigured list-valued fallback are replaced, because those
+	are precisely the upstream identity this app exists to displace.
+	"""
+	logo = branding().get("app_logo")
+
+	for app in bootinfo.get("app_data") or []:
+		app["app_logo_url"] = _branded_logo(app.get("app_logo_url"), logo)
+		app["app_title"] = _branded_title(app.get("app_title"))
+
+
+def _branded_logo(current, logo: str | None):
+	"""
+	The logo an app entry should carry: the bERP mark in place of an upstream or missing one.
+
+	`current` may arrive as the raw hook list (boot.py's unconfigured fallback), so it is
+	normalised to a single URL and a list never reaches the client, even when kept.
+	"""
+	if isinstance(current, list | tuple):
+		current = current[0] if current else None
+	if logo and (not current or current in UPSTREAM_LOGOS):
+		return logo
+	return current
+
+
+def _branded_title(title):
+	"""
+	Run an app title through _(), which upstream omits.
+
+	boot.py and get_versions take app titles straight from the `add_to_apps_screen` or
+	`app_title` hook with NO translation, so the Desk rendered "ERPNext", "Frappe
+	Framework" whatever the site's language. Applying the translation here keeps the
+	app's CSVs the single source of truth for brand strings: a site that adds a language
+	adds a CSV, and nothing here changes.
+	"""
+	return _(title) if isinstance(title, str) and title else title
+
+
+@frappe.whitelist()
+def get_versions() -> dict:
+	"""
+	Branded `frappe.utils.change_log.get_versions`, registered through
+	`override_whitelisted_methods`.
+
+	The Desk About dialog renders each app's logo and title from this call, and upstream
+	reads both straight from app hooks, so it showed the Frappe, ERPNext and Frappe HR
+	marks. Same rules as the Desk sidebar; the upstream result is otherwise unchanged.
+	"""
+	from frappe.utils.change_log import get_versions as upstream_get_versions
+
+	versions = upstream_get_versions()
+	logo = branding().get("app_logo")
+	for app in versions.values():
+		app["logo"] = _branded_logo(app.get("logo"), logo)
+		app["title"] = _branded_title(app.get("title"))
+	return versions
 
 
 # ─── Operator helper ──────────────────────────────────────────────────────────
