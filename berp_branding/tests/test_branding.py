@@ -256,7 +256,13 @@ class TestHRAppBrand(_TestCase):
 		for label, logo in (("bERP Test Upstream App", upstream), ("bERP Test Own App", own)):
 			if not frappe.db.exists("Desktop Icon", label):
 				frappe.get_doc(
-					{"doctype": "Desktop Icon", "name": label, "label": label, "icon_type": "App", "logo_url": logo}
+					{
+						"doctype": "Desktop Icon",
+						"name": label,
+						"label": label,
+						"icon_type": "App",
+						"logo_url": logo,
+					}
 				).db_insert()
 		result = apply_branding()
 		self.assertIn("bERP Test Upstream App", result["applied"].get("desktop_icon.logo_url", []))

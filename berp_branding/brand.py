@@ -268,9 +268,7 @@ def _apply_desktop_icon_logos(logo: str | None) -> list[str]:
 			frappe.clear_cache()
 		return names
 	except Exception as exc:  # pragma: no cover - defensive
-		frappe.logger("berp_branding").warning(
-			f"berp_branding: could not rebrand desktop icons: {exc}"
-		)
+		frappe.logger("berp_branding").warning(f"berp_branding: could not rebrand desktop icons: {exc}")
 		return []
 
 
