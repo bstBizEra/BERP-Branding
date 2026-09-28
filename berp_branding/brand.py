@@ -387,30 +387,55 @@ def _brand_boot_app_data(bootinfo) -> None:
 	logo = branding().get("app_logo")
 
 	for app in bootinfo.get("app_data") or []:
-		if logo:
-			current = app.get("app_logo_url")
-			if isinstance(current, list | tuple):
-				# Unconfigured: boot.py handed back the hook list rather than a URL.
-				current = current[0] if current else None
-			if not current or current in UPSTREAM_LOGOS:
-				app["app_logo_url"] = logo
-			else:
-				# Normalise, so a list never reaches the client even when kept.
-				app["app_logo_url"] = current
+		app["app_logo_url"] = _branded_logo(app.get("app_logo_url"), logo)
+		app["app_title"] = _branded_title(app.get("app_title"))
 
-		# boot.py assembles app_title from the `add_to_apps_screen` hook or the
-		# `app_title` hook and passes it through NO translation, so the Desk
-		# sidebar subtitle and the apps screen render the raw upstream name —
-		# "ERPNext", "Frappe Framework" — however the site's language is set.
-		#
-		# Running it through _() here is deliberately the whole fix: it keeps the
-		# app's translation CSVs as the single source of truth for brand strings
-		# and simply applies the translation upstream omitted, rather than
-		# hardcoding a second copy of the mapping in Python. A site that adds a
-		# language adds a CSV; nothing here changes.
-		title = app.get("app_title")
-		if isinstance(title, str) and title:
-			app["app_title"] = _(title)
+
+def _branded_logo(current, logo: str | None):
+	"""
+	The logo an app entry should carry: the bERP mark in place of an upstream or missing one.
+
+	`current` may arrive as the raw hook list (boot.py's unconfigured fallback), so it is
+	normalised to a single URL and a list never reaches the client, even when kept.
+	"""
+	if isinstance(current, list | tuple):
+		current = current[0] if current else None
+	if logo and (not current or current in UPSTREAM_LOGOS):
+		return logo
+	return current
+
+
+def _branded_title(title):
+	"""
+	Run an app title through _(), which upstream omits.
+
+	boot.py and get_versions take app titles straight from the `add_to_apps_screen` or
+	`app_title` hook with NO translation, so the Desk rendered "ERPNext", "Frappe
+	Framework" whatever the site's language. Applying the translation here keeps the
+	app's CSVs the single source of truth for brand strings: a site that adds a language
+	adds a CSV, and nothing here changes.
+	"""
+	return _(title) if isinstance(title, str) and title else title
+
+
+@frappe.whitelist()
+def get_versions() -> dict:
+	"""
+	Branded `frappe.utils.change_log.get_versions`, registered through
+	`override_whitelisted_methods`.
+
+	The Desk About dialog renders each app's logo and title from this call, and upstream
+	reads both straight from app hooks, so it showed the Frappe, ERPNext and Frappe HR
+	marks. Same rules as the Desk sidebar; the upstream result is otherwise unchanged.
+	"""
+	from frappe.utils.change_log import get_versions as upstream_get_versions
+
+	versions = upstream_get_versions()
+	logo = branding().get("app_logo")
+	for app in versions.values():
+		app["logo"] = _branded_logo(app.get("logo"), logo)
+		app["title"] = _branded_title(app.get("title"))
+	return versions
 
 
 # ─── Operator helper ──────────────────────────────────────────────────────────

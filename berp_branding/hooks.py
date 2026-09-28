@@ -69,6 +69,14 @@ app_include_js = "berp_brand.bundle.js"
 update_website_context = "berp_branding.brand.update_website_context"
 boot_session = "berp_branding.brand.boot_session"
 
+# The Desk About dialog lists every app with the logo and title from this call, read
+# raw from each app's hooks. Frappe's published override point; the wrapper calls the
+# upstream method and rebrands only logos and titles. v16 has no /apps page to fix:
+# frappe's website_redirects send /apps to /desk.
+override_whitelisted_methods = {
+	"frappe.utils.change_log.get_versions": "berp_branding.brand.get_versions",
+}
+
 # ─── Setup ────────────────────────────────────────────────────────────────────
 after_install = "berp_branding.brand.after_install"
 after_migrate = "berp_branding.brand.after_migrate"

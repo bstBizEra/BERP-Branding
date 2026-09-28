@@ -29,6 +29,7 @@ from berp_branding.brand import (
 	brand_name,
 	branding,
 	branding_status,
+	get_versions,
 	shipped_assets,
 	update_website_context,
 )
@@ -270,6 +271,37 @@ class TestHRAppBrand(_TestCase):
 			frappe.db.get_value("Desktop Icon", "bERP Test Upstream App", "logo_url"), branding()["app_logo"]
 		)
 		self.assertEqual(frappe.db.get_value("Desktop Icon", "bERP Test Own App", "logo_url"), own)
+
+
+class TestAboutDialog(_TestCase):
+	"""The Desk About dialog lists apps from get_versions; it must carry the bERP identity."""
+
+	def test_get_versions_is_overridden(self):
+		overrides = frappe.get_hooks("override_whitelisted_methods")
+		self.assertEqual(
+			overrides.get("frappe.utils.change_log.get_versions"), ["berp_branding.brand.get_versions"]
+		)
+
+	def test_upstream_logos_and_titles_are_rebranded(self):
+		from unittest.mock import patch
+
+		upstream = {
+			"frappe": {
+				"title": "Frappe Framework",
+				"logo": "/assets/frappe/images/frappe-framework-logo.svg",
+			},
+			"hrms": {"title": "Frappe HR", "logo": "/assets/hrms/images/frappe-hr-logo.svg"},
+			"berp_lao": {"title": "Lao BERP", "logo": None},
+			"own": {"title": "Own App", "logo": "/assets/own/logo.svg"},
+		}
+		with patch("frappe.utils.change_log.get_versions", return_value=upstream):
+			versions = get_versions()
+		mark = branding()["app_logo"]
+		self.assertEqual(versions["frappe"]["logo"], mark)
+		self.assertEqual(versions["hrms"]["logo"], mark)
+		self.assertEqual(versions["berp_lao"]["logo"], mark)
+		self.assertEqual(versions["own"]["logo"], "/assets/own/logo.svg")
+		self.assertEqual(versions["hrms"]["title"], frappe._("Frappe HR"))
 
 
 class TestBrandingStatus(_TestCase):
