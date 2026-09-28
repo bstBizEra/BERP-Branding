@@ -232,7 +232,46 @@ def apply_branding(force: int = 0) -> dict:
 	if navbar_changed:
 		changed["navbar_settings.app_logo"] = navbar_changed
 
+	icons_changed = _apply_desktop_icon_logos(wanted.get("app_logo"))
+	if icons_changed:
+		changed["desktop_icon.logo_url"] = icons_changed
+
 	return {"applied": changed, "configured": wanted, "site": frappe.local.site}
+
+
+def _apply_desktop_icon_logos(logo: str | None) -> list[str]:
+	"""
+	Put the bERP mark on the v16 Desktop's app tiles that still carry an upstream logo.
+
+	Installing an app writes a `Desktop Icon` record of type App with that app's
+	logo baked into `logo_url` (HRMS: "Frappe HR" + frappe-hr-logo.svg). The label
+	is already rebranded by the translation CSVs, because the Desktop renders it
+	through `__()`; the logo is data and needs this write. Only logos listed in
+	UPSTREAM_LOGOS are replaced, so an operator's own icon is never touched.
+
+	Returns the names of the icons changed. Absent on Frappe versions without
+	the Desktop Icon DocType; failure must not fail the whole apply.
+	"""
+	if not logo:
+		return []
+	try:
+		if not frappe.db.exists("DocType", "Desktop Icon"):
+			return []
+		names = frappe.get_all(
+			"Desktop Icon",
+			filters={"icon_type": "App", "logo_url": ["in", UPSTREAM_LOGOS]},
+			pluck="name",
+		)
+		for name in names:
+			frappe.db.set_value("Desktop Icon", name, "logo_url", logo)
+		if names:
+			frappe.clear_cache()
+		return names
+	except Exception as exc:  # pragma: no cover - defensive
+		frappe.logger("berp_branding").warning(
+			f"berp_branding: could not rebrand desktop icons: {exc}"
+		)
+		return []
 
 
 def _apply_navbar_logo(logo: str | None, force: int = 0) -> str | None:
@@ -311,6 +350,7 @@ def boot_session(bootinfo):
 UPSTREAM_LOGOS = (
 	"/assets/frappe/images/frappe-framework-logo.svg",
 	"/assets/erpnext/images/erpnext-logo.svg",
+	"/assets/hrms/images/frappe-hr-logo.svg",
 )
 
 

@@ -223,6 +223,49 @@ class TestApplyBranding(_TestCase):
 		self.assertEqual(frappe.db.get_single_value("Website Settings", "app_logo"), "/files/operator.svg")
 
 
+class TestHRAppBrand(_TestCase):
+	"""HRMS's "Frappe HR" tile must read bERP HR and carry the bERP mark."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_every_translation_file_renames_frappe_hr(self):
+		import csv
+		import os
+
+		folder = frappe.get_app_path("berp_branding", "translations")
+		for name in sorted(os.listdir(folder)):
+			with self.subTest(file=name), open(os.path.join(folder, name), encoding="utf-8") as f:
+				mapping = {row[0]: row[1] for row in csv.reader(f) if len(row) >= 2}
+				self.assertEqual(mapping.get("Frappe HR"), "bERP HR")
+
+	def test_boot_replaces_the_hrms_logo_and_title(self):
+		bootinfo = frappe._dict(
+			app_data=[{"app_title": "Frappe HR", "app_logo_url": "/assets/hrms/images/frappe-hr-logo.svg"}]
+		)
+		boot_session(bootinfo)
+		app = bootinfo.app_data[0]
+		self.assertEqual(app["app_logo_url"], branding()["app_logo"])
+		self.assertEqual(app["app_title"], frappe._("Frappe HR"))
+
+	def test_apply_rebrands_only_upstream_desktop_app_logos(self):
+		if not frappe.db.exists("DocType", "Desktop Icon"):
+			self.skipTest("Desktop Icon DocType not present on this Frappe version")
+		upstream = "/assets/hrms/images/frappe-hr-logo.svg"
+		own = "/files/operator-chose-this.svg"
+		for label, logo in (("bERP Test Upstream App", upstream), ("bERP Test Own App", own)):
+			if not frappe.db.exists("Desktop Icon", label):
+				frappe.get_doc(
+					{"doctype": "Desktop Icon", "name": label, "label": label, "icon_type": "App", "logo_url": logo}
+				).db_insert()
+		result = apply_branding()
+		self.assertIn("bERP Test Upstream App", result["applied"].get("desktop_icon.logo_url", []))
+		self.assertEqual(
+			frappe.db.get_value("Desktop Icon", "bERP Test Upstream App", "logo_url"), branding()["app_logo"]
+		)
+		self.assertEqual(frappe.db.get_value("Desktop Icon", "bERP Test Own App", "logo_url"), own)
+
+
 class TestBrandingStatus(_TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
