@@ -67,10 +67,10 @@ $berp-font-path: "/assets/berp_branding/fonts";
 		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-// Fallback face. CI-001 §10 names it as the fallback rather than decoration:
-// DS-001 §32 requires the Lao test corpus to include Pali/Sanskrit-extension
-// characters "covered by approved fallback", so this face has a real job where
-// Phetsarath's coverage ends.
+// Primary Lao UI face since 2026-09-29 (operator ruling, ADR-028 amendment);
+// before that it was the CI-001 §10 fallback. It covers 83 codepoints of the Lao
+// block against Phetsarath's 65, including the Pali/Sanskrit extensions that
+// DS-001 §32 requires, and it is variable, so it also renders weight 420.
 @font-face {
 	font-family: "Noto Sans Lao";
 	font-style: normal;
