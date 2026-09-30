@@ -244,3 +244,27 @@ img[src*="/erpnext/icons/desktop_icons/"] {
 	color: var(--berp-text-tertiary);
 	opacity: 1;
 }
+
+// ---------------------------------------------------------------------------
+// Chart text — Lao legends and labels fell off the bERP font stack.
+//
+// Measured 2026-09-30 on dev, /desk/dashboard-view/Human Resource in `lo`: the
+// legend "ຈຳນວນການຈ້າງງານ / ຈຳນວນພະນັກງານລາອອກ" rendered in a Windows fallback
+// face, not Noto Sans Lao, beside Lao text that did use it. Cause: frappe-charts
+// hard-codes its own family, which names no Lao face and does not read
+// --font-stack, so no token can reach it:
+//     .chart-container { font-family: -apple-system, BlinkMacSystemFont, … }
+//
+// The library declares that rule TWICE: once in desk.bundle.css, and once as an
+// inline <style> it injects at runtime — after this bundle, so it wins every
+// tie on source order. Matching its 0,1,0 therefore loses. `body .chart-container`
+// is 0,1,1, the smallest step that outranks it, measured with this rule placed
+// BEFORE the runtime style: legends resolve to the Inter + Noto Sans Lao stack.
+// No !important (B2.2).
+//
+// Charts inherit the family through their SVG <text>, so this one rule covers
+// legends, axis labels and tooltips on every dashboard and report chart.
+// ---------------------------------------------------------------------------
+body .chart-container {
+	font-family: var(--font-stack);
+}
